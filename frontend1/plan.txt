@@ -48,4 +48,23 @@ OK: czego potrzebujemy:
 		-usuń krawędź
 		-zmień wartość na krawędzi
 		-dodaj wierchołek z innego
-		-usuń wierchołek 
+		-usuń wierchołek
+
+
+TODO:
+1. dodawanie wierzchołków
+	<musi od razu dodać krawędź do poprzednika>
+	#przeciągnij linię z wierzchołka w puste miejsce
+
+2. dodawanie krawędzi
+	<między 2 wierzchołkami może być tylko w 1 stronę, nie może dodać do siebie>
+	#przeciągnij linię z wierchołka na inny (możliwe mają być wyróżnione)
+
+3. usuwanie krawędzi <musi istnieś ścieżka od korzenia do każdego wierzchołka nawet po usunięciu>
+	#przeciągnij linię z wierchołka na inny gdzie krawędź istnieje (możliwe mają być wyróżnione)
+
+4. usuwanie wierzchołków <nie może mieć następników>
+	#drugi przycisk na wierchołku
+
+5. zamiana poddrzew <tak jak masz jest chyba dobrze>
+	#przeciągnij drugi przycisk myszy

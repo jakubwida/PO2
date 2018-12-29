@@ -28473,7 +28473,7 @@ var GraphManager = function GraphManager(width, height) {
 
 		//TEMP
 		//this.graph_json = {"a":["b","d"],"b":[],"d":["b"]}
-		_this._apply_json({ "a": ["b", "c"], "b": ["c"], "c": [] });
+		_this._apply_json({ 0: [1, 2], 1: [2], 2: [] });
 		//TEMP end
 	};
 
@@ -28580,8 +28580,7 @@ var GraphManager = function GraphManager(width, height) {
 	};
 
 	this._init_screen = function () {
-		_this.svg = d3.select("body").append("svg").attr("width", _this.dimensions.x).attr("height", _this.dimensions.y);
-
+		_this.svg = d3.select("body").append("svg").attr("width", _this.dimensions.x).attr("height", _this.dimensions.y).on("mousedown", _this._ui_mousedown).on("mouseup", _this._ui_mouseup);
 		//appending markers for lines
 		_this.svg.append('svg:defs').append('svg:marker').attr('id', 'end-arrow').attr('class', "link_marker").attr('viewBox', '0 -5 10 10').attr('refX', 6).attr('markerWidth', 3).attr('markerHeight', 3).attr('orient', 'auto').append('svg:path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#000');
 	};
@@ -28595,11 +28594,18 @@ var GraphManager = function GraphManager(width, height) {
 
 		var u = _this.svg.selectAll('.node').data(_this.nodes);
 
+		//now includes UI
 		u.enter().append('circle').attr('r', _this.parameters.node_radius).merge(u).attr('cx', function (d) {
 			return d.x;
 		}).attr('cy', function (d) {
 			return d.y;
-		}).attr("class", "node");
+		}).attr("class", "node").attr("id", function (d) {
+			return "node_" + d.id;
+		}).on("mouseover", function (d) {
+			return _this._ui_mouseover(d.id);
+		}).on("mouseout", function () {
+			return _this._ui_mouseout();
+		});
 
 		u.exit().remove();
 
@@ -28650,6 +28656,45 @@ var GraphManager = function GraphManager(width, height) {
 		_this.simulation.nodes(_this.nodes);
 		_this.simulation.force("links").links(_this.links);
 		_this.simulation.alpha(1).restart();
+	};
+
+	this._ui_mousedown = function () {
+		if (_this.ui.mouseover_node != null) {
+			_this.ui.selected_node = _this.ui.mouseover_node;
+			_this.svg.selectAll("#node_" + _this.ui.mouseover_node.id).classed("node_highlighted", true);
+		}
+	};
+
+	this._ui_mouseup = function (event) {
+		//temp -just cleans
+		if (_this.ui.mouseover_node == null && _this.ui.selected_node != null) {
+			console.log("adding node");
+			_this.add_node({ x: d3.event.pageX, y: d3.event.pageY }, _this._ui_get_next_id(), _this.ui.selected_node.id);
+		}
+		_this.ui.selected_node = null;
+		_this._ui_mode_clear();
+	};
+
+	this._ui_mouseover = function (node_id) {
+		_this.ui.mouseover_node = _this.indexed_nodes[node_id];
+		_this.svg.selectAll("#node_" + node_id).classed("node_mouseover", true);
+	};
+
+	this._ui_mouseout = function () {
+		_this.svg.selectAll("#node_" + _this.ui.mouseover_node.id).classed("node_mouseover", false);
+		_this.ui.mouseover_node = null;
+	};
+
+	this._ui_get_next_id = function () {
+		_this.ui.next_id = parseInt(_this.ui.next_id) + 1;
+		return _this.ui.next_id - 1;
+	};
+
+	this._ui_mode_clear = function () {
+		_this.ui.selected_node = null;
+		_this.ui.second_node = null;
+		_this.ui.mode = null;
+		_this.svg.selectAll(".node").attr("class", "node");
 	};
 
 	this._get_graph_to_json = function () {
@@ -28734,7 +28779,10 @@ var GraphManager = function GraphManager(width, height) {
 		});
 
 		add_nodes.forEach(function (e) {
-			_this.add_pure_node({ x: 0, y: 0 }, e);
+			if (_this.ui.next_id < parseInt(e)) {
+				_this.ui.next_id = parseInt(e) + 1;
+			}
+			_this.add_pure_node({ x: _this.dimensions.x / 2, y: _this.dimensions.y / 2 }, e);
 		});
 
 		add_links.forEach(function (e) {
@@ -28749,11 +28797,12 @@ var GraphManager = function GraphManager(width, height) {
 	this.parameters = {
 		node_radius: 20,
 		link_size: 100,
-		charge_force: -200,
+		charge_force: -400,
 		center_force: 10
 	};
 
 	this.indexed_nodes = {};
+	this.root = { x: this.dimensions.x / 2, y: this.dimensions.y / 2, id: 0, links: {}, precursors: {} };
 	this.nodes = []; //[{x:100,y:100,id:"0",links:[]},{x:150,y:100,id:"1"},{x:150,y:150,id:"2",links:[]},{x:150,y:120,id:"3",links:[]}]
 	this.links = []; //[{source:this.nodes[0],target:this.nodes[1]}]
 
@@ -28761,9 +28810,23 @@ var GraphManager = function GraphManager(width, height) {
 	this.simulation = null;
 
 	this.graph_json = {};
+
+	this.ui = {
+		mouseover_node: null,
+		selected_node: null,
+		second_node: null,
+		mode: null, //ADD_NODE, REMOVE_NODE, ADD_LINK, REMOVE_LINK, SWAP_NODE
+		next_id: 1
+	};
 }
 
 //privates ====================================================================
+
+//========== ui functions
+
+//-
+
+//========== json deltas
 
 ;
 

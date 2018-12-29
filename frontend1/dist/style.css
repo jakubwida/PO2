@@ -1,9 +1,32 @@
 .node {
 	fill: cadetblue;
+}
+
+.node_highlighted {
+  stroke: lightblue;
+  stroke-width: 4px;
+}
+
+.node_mouseover {
+  stroke: cadetblue;
+  stroke-width: 2px;
+}
+
+.node_positive {
+	fill: olive;
+}
+
+.node_negative {
+	fill: red;
+}
+
+.node_dimmed {
 	fill-opacity: .25;
 }
 
 .node_text {
+	pointer-events: none;
+	user-select: none;
 	fill: black;
 	fill-opacity: 1;
 }

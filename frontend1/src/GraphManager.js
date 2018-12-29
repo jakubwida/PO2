@@ -10,11 +10,12 @@ export default class GraphManager {
 		this.parameters = {
 			node_radius:20,
 			link_size:100,
-			charge_force:-200,
+			charge_force:-400,
 			center_force:10
 			}
 
 		this.indexed_nodes = {}
+		this.root = {x:this.dimensions.x/2,y:this.dimensions.y/2,id:0,links:{},precursors:{}}
 		this.nodes = [] //[{x:100,y:100,id:"0",links:[]},{x:150,y:100,id:"1"},{x:150,y:150,id:"2",links:[]},{x:150,y:120,id:"3",links:[]}]
 		this.links = [] //[{source:this.nodes[0],target:this.nodes[1]}]
 
@@ -22,6 +23,15 @@ export default class GraphManager {
 		this.simulation = null;
 
 		this.graph_json = {}
+
+
+		this.ui = {
+			mouseover_node:null,
+			selected_node:null,
+			second_node:null,
+			mode:null, //ADD_NODE, REMOVE_NODE, ADD_LINK, REMOVE_LINK, SWAP_NODE
+			next_id:1
+		}
 	}
 
 	init = (graph_json) => {
@@ -49,7 +59,7 @@ export default class GraphManager {
 
 		//TEMP
 		//this.graph_json = {"a":["b","d"],"b":[],"d":["b"]}
-		this._apply_json({"a":["b","c"],"b":["c"],"c":[]})
+		this._apply_json({0:[1,2],1:[2],2:[]})
 		//TEMP end
 	}
 
@@ -156,7 +166,8 @@ export default class GraphManager {
 			.append("svg")
 			.attr("width", this.dimensions.x)
 			.attr("height", this.dimensions.y)
-
+			.on("mousedown",this._ui_mousedown)
+			.on("mouseup",this._ui_mouseup)
 	//appending markers for lines
 		this.svg.append('svg:defs').append('svg:marker')
 	    .attr('id', 'end-arrow')
@@ -181,6 +192,7 @@ export default class GraphManager {
 		var u = this.svg.selectAll('.node')
     .data(this.nodes)
 
+//now includes UI
 	  u.enter()
 	    .append('circle')
 	    .attr('r', this.parameters.node_radius)
@@ -188,6 +200,9 @@ export default class GraphManager {
 	    .attr('cx', (d)=> {return d.x})
 	    .attr('cy', (d)=> {return d.y})
 			.attr("class", "node")
+			.attr("id",(d)=> {return "node_"+d.id})
+			.on("mouseover",(d)=>this._ui_mouseover(d.id))
+			.on("mouseout",()=>this._ui_mouseout())
 
 	  u.exit().remove()
 
@@ -250,6 +265,50 @@ export default class GraphManager {
 		this.simulation.alpha(1).restart();
 	}
 
+	//========== ui functions
+
+	_ui_mousedown = () => {
+		if(this.ui.mouseover_node!=null){
+			this.ui.selected_node = this.ui.mouseover_node
+			this.svg.selectAll("#node_"+this.ui.mouseover_node.id).classed("node_highlighted",true)
+		}
+	}
+
+	_ui_mouseup= (event) => {
+		//temp -just cleans
+		if(this.ui.mouseover_node==null && this.ui.selected_node !=null){
+			console.log("adding node")
+			this.add_node({x:d3.event.pageX,y:d3.event.pageY},this._ui_get_next_id(),this.ui.selected_node.id)
+		}
+		this.ui.selected_node = null
+		this._ui_mode_clear()
+	}
+
+	_ui_mouseover = (node_id) => {
+		this.ui.mouseover_node = this.indexed_nodes[node_id]
+		this.svg.selectAll("#node_"+node_id).classed("node_mouseover",true)
+	}
+
+	_ui_mouseout = () => {
+		this.svg.selectAll("#node_"+this.ui.mouseover_node.id).classed("node_mouseover",false)
+		this.ui.mouseover_node = null
+	}
+
+	_ui_get_next_id= () => {
+		this.ui.next_id = parseInt(this.ui.next_id) + 1
+		return this.ui.next_id -1
+	}
+
+	_ui_mode_clear = () => {
+		this.ui.selected_node = null;
+		this.ui.second_node = null;
+		this.ui.mode = null;
+		this.svg.selectAll(".node").attr("class","node")
+	}
+
+	//-
+
+	//========== json deltas
 
 	_get_graph_to_json = () => {
 
@@ -324,7 +383,10 @@ export default class GraphManager {
 		})
 
 		add_nodes.forEach(e=>{
-			this.add_pure_node({x:0,y:0},e)
+			if(this.ui.next_id < parseInt(e)){
+				this.ui.next_id = parseInt(e) + 1
+				}
+			this.add_pure_node({x:this.dimensions.x/2,y:this.dimensions.y/2},e)
 		})
 
 		add_links.forEach(e=>{
