@@ -30,7 +30,8 @@ export default class GraphManager {
 			selected_node:null,
 			second_node:null,
 			mode:null, //ADD_NODE, REMOVE_NODE, ADD_LINK, REMOVE_LINK, SWAP_NODE
-			next_id:1
+			next_id:1,
+			current_legal_linkable_nodes:[]
 		}
 	}
 
@@ -200,11 +201,19 @@ export default class GraphManager {
 	    .attr('cx', (d)=> {return d.x})
 	    .attr('cy', (d)=> {return d.y})
 			.attr("class", "node")
+			.classed("node_mouseover",(d)=>{return this.ui.mouseover_node && this.ui.mouseover_node.id == d.id})
+			.classed("node_highlighted",(d)=>{return this.ui.selected_node && this.ui.selected_node.id == d.id})
 			.attr("id",(d)=> {return "node_"+d.id})
 			.on("mouseover",(d)=>this._ui_mouseover(d.id))
 			.on("mouseout",()=>this._ui_mouseout())
 
 	  u.exit().remove()
+
+
+		this.svg.selectAll(".node").classed("node_positive",false)
+		this.ui.current_legal_linkable_nodes.forEach(e=>{
+			this.svg.select("#node_"+e).classed("node_positive",true)
+		})
 
 		var t = this.svg.selectAll('.node_text')
 		.data(this.nodes)
@@ -270,23 +279,29 @@ export default class GraphManager {
 	_ui_mousedown = () => {
 		if(this.ui.mouseover_node!=null){
 			this.ui.selected_node = this.ui.mouseover_node
-			this.svg.selectAll("#node_"+this.ui.mouseover_node.id).classed("node_highlighted",true)
+			this.ui.current_legal_linkable_nodes = this._ui_get_legal_linkable_node_ids(this.ui.selected_node.id)
+			//console.log(this.ui.current_legal_linkable_nodes)
+			this._restart()
 		}
 	}
 
 	_ui_mouseup= (event) => {
-		//temp -just cleans
+
 		if(this.ui.mouseover_node==null && this.ui.selected_node !=null){
-			console.log("adding node")
 			this.add_node({x:d3.event.pageX,y:d3.event.pageY},this._ui_get_next_id(),this.ui.selected_node.id)
+		} else if (this.ui.mouseover_node!=null && this.ui.selected_node !=null && this.ui.current_legal_linkable_nodes.has(String(this.ui.mouseover_node.id))) {
+			this.add_link(this.ui.selected_node.id,this.ui.mouseover_node.id)
 		}
+
 		this.ui.selected_node = null
-		this._ui_mode_clear()
+		this.ui.current_legal_linkable_nodes = []
+		this._restart()
 	}
 
 	_ui_mouseover = (node_id) => {
 		this.ui.mouseover_node = this.indexed_nodes[node_id]
 		this.svg.selectAll("#node_"+node_id).classed("node_mouseover",true)
+
 	}
 
 	_ui_mouseout = () => {
@@ -299,14 +314,26 @@ export default class GraphManager {
 		return this.ui.next_id -1
 	}
 
-	_ui_mode_clear = () => {
-		this.ui.selected_node = null;
-		this.ui.second_node = null;
-		this.ui.mode = null;
-		this.svg.selectAll(".node").attr("class","node")
-	}
-
 	//-
+
+	_ui_get_legal_linkable_node_ids = (node_id) => {
+		var node = this.indexed_nodes[node_id]
+		var all_node_ids = Object.keys(this.indexed_nodes)
+		var precursors = new Set(Object.keys(node.precursors))
+		var links = new Set (Object.keys(node.links))
+		//console.log(all_node_ids,node_id,precursors,links)
+		var root = 0
+		var self = node.id
+		var out = []
+		//console.log("initial:",all_node_ids)
+		out = all_node_ids.filter(e => !precursors.has(e))
+		//console.log("prec filter",out)
+		out = out.filter(e => !links.has(e))
+		//console.log("link filter",out)
+		out = out.filter(e => e!=root && e!=self)
+		//console.log("self root filter",out)
+		return new Set(out)
+	}
 
 	//========== json deltas
 

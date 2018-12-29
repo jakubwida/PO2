@@ -28599,7 +28599,11 @@ var GraphManager = function GraphManager(width, height) {
 			return d.x;
 		}).attr('cy', function (d) {
 			return d.y;
-		}).attr("class", "node").attr("id", function (d) {
+		}).attr("class", "node").classed("node_mouseover", function (d) {
+			return _this.ui.mouseover_node && _this.ui.mouseover_node.id == d.id;
+		}).classed("node_highlighted", function (d) {
+			return _this.ui.selected_node && _this.ui.selected_node.id == d.id;
+		}).attr("id", function (d) {
 			return "node_" + d.id;
 		}).on("mouseover", function (d) {
 			return _this._ui_mouseover(d.id);
@@ -28608,6 +28612,11 @@ var GraphManager = function GraphManager(width, height) {
 		});
 
 		u.exit().remove();
+
+		_this.svg.selectAll(".node").classed("node_positive", false);
+		_this.ui.current_legal_linkable_nodes.forEach(function (e) {
+			_this.svg.select("#node_" + e).classed("node_positive", true);
+		});
 
 		var t = _this.svg.selectAll('.node_text').data(_this.nodes);
 
@@ -28661,18 +28670,23 @@ var GraphManager = function GraphManager(width, height) {
 	this._ui_mousedown = function () {
 		if (_this.ui.mouseover_node != null) {
 			_this.ui.selected_node = _this.ui.mouseover_node;
-			_this.svg.selectAll("#node_" + _this.ui.mouseover_node.id).classed("node_highlighted", true);
+			_this.ui.current_legal_linkable_nodes = _this._ui_get_legal_linkable_node_ids(_this.ui.selected_node.id);
+			//console.log(this.ui.current_legal_linkable_nodes)
+			_this._restart();
 		}
 	};
 
 	this._ui_mouseup = function (event) {
-		//temp -just cleans
+
 		if (_this.ui.mouseover_node == null && _this.ui.selected_node != null) {
-			console.log("adding node");
 			_this.add_node({ x: d3.event.pageX, y: d3.event.pageY }, _this._ui_get_next_id(), _this.ui.selected_node.id);
+		} else if (_this.ui.mouseover_node != null && _this.ui.selected_node != null && _this.ui.current_legal_linkable_nodes.has(String(_this.ui.mouseover_node.id))) {
+			_this.add_link(_this.ui.selected_node.id, _this.ui.mouseover_node.id);
 		}
+
 		_this.ui.selected_node = null;
-		_this._ui_mode_clear();
+		_this.ui.current_legal_linkable_nodes = [];
+		_this._restart();
 	};
 
 	this._ui_mouseover = function (node_id) {
@@ -28690,11 +28704,29 @@ var GraphManager = function GraphManager(width, height) {
 		return _this.ui.next_id - 1;
 	};
 
-	this._ui_mode_clear = function () {
-		_this.ui.selected_node = null;
-		_this.ui.second_node = null;
-		_this.ui.mode = null;
-		_this.svg.selectAll(".node").attr("class", "node");
+	this._ui_get_legal_linkable_node_ids = function (node_id) {
+		var node = _this.indexed_nodes[node_id];
+		var all_node_ids = Object.keys(_this.indexed_nodes);
+		var precursors = new Set(Object.keys(node.precursors));
+		var links = new Set(Object.keys(node.links));
+		//console.log(all_node_ids,node_id,precursors,links)
+		var root = 0;
+		var self = node.id;
+		var out = [];
+		//console.log("initial:",all_node_ids)
+		out = all_node_ids.filter(function (e) {
+			return !precursors.has(e);
+		});
+		//console.log("prec filter",out)
+		out = out.filter(function (e) {
+			return !links.has(e);
+		});
+		//console.log("link filter",out)
+		out = out.filter(function (e) {
+			return e != root && e != self;
+		});
+		//console.log("self root filter",out)
+		return new Set(out);
 	};
 
 	this._get_graph_to_json = function () {
@@ -28816,7 +28848,8 @@ var GraphManager = function GraphManager(width, height) {
 		selected_node: null,
 		second_node: null,
 		mode: null, //ADD_NODE, REMOVE_NODE, ADD_LINK, REMOVE_LINK, SWAP_NODE
-		next_id: 1
+		next_id: 1,
+		current_legal_linkable_nodes: []
 	};
 }
 
