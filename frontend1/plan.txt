@@ -1,0 +1,51 @@
+CO ma to robić?
+
+1. ma to wczytywać z pliku graf skierowany z etykietami na krawędziach i wierchchołkach
+2. ma pozwalać na edycję grafu:
+	-krawędzie:
+		-dodawanie (między dowolne, zakładam że może być tylko jedna między 2 wierchołkami)
+		-usuwanie (nie można usunąć ostatniej krawędzi do wierzchołka)
+		-zmiana etykiety
+	-wierchołki
+		-dodawanie (musi istnieć ścieżka z korzenia)
+		-usuwanie (nie może usunąć ścieżki z korzenia -tylko wierzchołki bez następników, usuwa z nim ścieżki)
+		-zmiana wartości (czy w ogóle?) (nie licząc korzenia?)
+		-zmiana podgrafów wierchołków (wtedy kiedy nie leżą na tej samej ścieżce)
+
+w zasadzie to tyle.
+
+PLAN DZIAŁAŃ:
+robimy to tak że w jednej klasie trzymamy SVG wierchołka czy tam ścieżki wraz z abstrakcją
++ mamy centralną klasę do API abstrakcyjnych operacji
++ drugą klasę do obsługi wyświetlania co komunikuje się z tym API
+
+===================
+tekst górksiehgo
+===================
+
+Proszę napisać program, który odczytuje acykliczny graf skierowany podany w pliku wejściowym i wyświetla go w postaci graficznej. Plik wejściowy ma następującą strukturę:
+
+liczbaWęzłów węzeł0 liczbaNastępników numerNastępnika1, …, numer następnikaN1 węzeł1 liczbaNastępników numerNastępnika1, …, numer następnikaN2 … węzełN liczbaNastępników numerNastępnika1, …, numer następnikaNm
+
+Przykład:
+
+10 0 2 1 3 1 1 2 2 1 8 3 4 4 5 6 7 4 1 9 5 1 8 6 0 7 0 8 0 9 0
+
+Program po wyświetleniu grafu powinien umożliwiać wybór krawędzi oraz modyfikacje podpięcia tej krawędzi do wierzchołków oraz usunięcie krawędzi. Nie można usunąć krawędzi w ten sposób aby któryś z wierzchołków nie posiadał poprzednika (w dowolnym momencie musi istnieć ścieżka od korzenia (węzeł nr 0) do dowolnego innego wierzchołka). Każda krawędź musi łączyć dwa wierzchołki, więc nie można jej przepiąć tak, by krawędź była podpięta tylko do jednego wierzchołka. Program ma również umożliwiać dodawanie krawędzi pomiędzy dwoma wybranymi węzłami. Możliwe jest również dodawanie wierzchołków (w tym przypadku dodawana jest także krawędź i połączenie z innym wybranym wierzchołkiem) oraz usuwanie wierzchołków (usuwanie jest możliwe tylko jeśli wybrany wierzchołek nie posiada następników). Program powinien umożliwiać także krzyżowanie podgrafów - po wybraniu dwóch węzłów można zamienić podgrafy, których korzeniami są wybrane wierzchołki (krzyżowanie jest możliwe tylko jeśli wybrane węzły nie znajdują się na tej samej ścieżce w grafie).
+
+
+
+
+OK: czego potrzebujemy:
+1. obiektowo-funkcyjny wyświetlacz.
+	WYŚWIETLACZ
+		-wysyła akcje do serwera (od razu wykonuje akcje i jak serwer zwróci jsona to najwyżej wykonuje deltę)
+		-pobiera jsona i robi deltę
+		-wykonuje deltę
+
+	akcje:
+		-dodaj krawędź
+		-usuń krawędź
+		-zmień wartość na krawędzi
+		-dodaj wierchołek z innego
+		-usuń wierchołek 

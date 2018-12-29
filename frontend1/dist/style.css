@@ -1,0 +1,20 @@
+.node {
+	fill: cadetblue;
+	fill-opacity: .25;
+}
+
+.node_text {
+	fill: black;
+	fill-opacity: 1;
+}
+
+.link {
+    stroke: black;
+    stroke-width: 2px;
+}
+
+.link_marker {
+    stroke: black;
+		fill: black;
+    stroke-width: 2px;
+}
