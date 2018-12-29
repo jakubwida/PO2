@@ -31,7 +31,8 @@ export default class GraphManager {
 			second_node:null,
 			mode:null, //ADD_NODE, REMOVE_NODE, ADD_LINK, REMOVE_LINK, SWAP_NODE
 			next_id:1,
-			current_legal_linkable_nodes:[]
+			current_legal_linkable_nodes:[],
+			current_legal_removable_node_links:[]
 		}
 	}
 
@@ -215,6 +216,11 @@ export default class GraphManager {
 			this.svg.select("#node_"+e).classed("node_positive",true)
 		})
 
+		this.svg.selectAll(".node").classed("node_negative",false)
+		this.ui.current_legal_removable_node_links.forEach(e=>{
+			this.svg.select("#node_"+e).classed("node_negative",true)
+		})
+
 		var t = this.svg.selectAll('.node_text')
 		.data(this.nodes)
 
@@ -280,21 +286,31 @@ export default class GraphManager {
 		if(this.ui.mouseover_node!=null){
 			this.ui.selected_node = this.ui.mouseover_node
 			this.ui.current_legal_linkable_nodes = this._ui_get_legal_linkable_node_ids(this.ui.selected_node.id)
+			this.ui.current_legal_removable_node_links = this._ui_get_legal_removable_linked_node_ids()
 			//console.log(this.ui.current_legal_linkable_nodes)
 			this._restart()
 		}
 	}
 
 	_ui_mouseup= (event) => {
-
+/*
+		if(this.ui.mouseover_node!=null && this.ui.selected_node !=null ) {
+			console.log("hey!",(new Set(Object.keys(this.ui.selected_node.links))).has(String(this.ui.mouseover_node.id)),this.ui.mouseover_node.precursors)
+			var is = this._ui_check_if_node_has_path_to_root_without_given_path(this.ui.mouseover_node.id,this.ui.selected_node.id)
+			console.log(is)
+		}
+*/
 		if(this.ui.mouseover_node==null && this.ui.selected_node !=null){
 			this.add_node({x:d3.event.pageX,y:d3.event.pageY},this._ui_get_next_id(),this.ui.selected_node.id)
 		} else if (this.ui.mouseover_node!=null && this.ui.selected_node !=null && this.ui.current_legal_linkable_nodes.has(String(this.ui.mouseover_node.id))) {
 			this.add_link(this.ui.selected_node.id,this.ui.mouseover_node.id)
+		} else if (this.ui.mouseover_node!=null && this.ui.selected_node !=null && this.ui.current_legal_removable_node_links.has(String(this.ui.mouseover_node.id))) {
+			this.remove_link(this.ui.selected_node.id,this.ui.mouseover_node.id)
 		}
 
 		this.ui.selected_node = null
 		this.ui.current_legal_linkable_nodes = []
+		this.ui.current_legal_removable_node_links = []
 		this._restart()
 	}
 
@@ -333,6 +349,59 @@ export default class GraphManager {
 		out = out.filter(e => e!=root && e!=self)
 		//console.log("self root filter",out)
 		return new Set(out)
+	}
+
+	_ui_get_legal_removable_linked_node_ids = (node_id) => {
+		//dla każdej nody należy sprawdzić czy jest ścieżka do roota
+		//problemem są cykle
+		//możliwe rozwiązanie:
+		//idąc po prekursorach "usuwamy" ścieżki po których przeszliśmy.
+		//idziemy rekursywnie, najlepiej jak zrobimy kopię modelu grafu
+		//
+		//
+		return new Set(Object.keys(this.ui.selected_node.links).filter((e)=>this._ui_check_if_node_has_path_to_root_without_given_path(e,this.ui.selected_node.id)))
+	}
+
+	_ui_check_if_node_has_path_to_root_without_given_path = (node_id,linking_node_id) =>{
+		console.log("checking>>>",node_id,linking_node_id)
+
+		var copied_graph = {}
+
+		Object.keys(this.indexed_nodes).forEach(e=>{
+			var node = this.indexed_nodes[e]
+			var prec_set = new Set(Object.keys(node.precursors))
+			copied_graph[e] = prec_set
+			})
+
+		//remove given link
+		copied_graph[node_id].delete(String(linking_node_id))
+		//console.log("graph",copied_graph)
+
+		var checked_nodes = new Set([])
+		var pending_nodes = new Set([String(node_id)])
+
+		while(pending_nodes.size > 0){
+			var pending_node = pending_nodes.values().next().value
+			//console.log("node:",pending_node)
+			//console.log("pending:",pending_nodes)
+			//console.log("checked:",checked_nodes)
+			if(pending_node==String(this.root.id)) {
+				return true
+			}
+			pending_nodes.delete(pending_node)
+			checked_nodes.add(pending_node)
+
+			var precursors = copied_graph[pending_node]
+			//console.log("precursors",copied_graph[pending_node])
+			precursors.forEach(e=>{
+				if(!checked_nodes.has(e)){
+					pending_nodes.add(e)
+				}
+			})
+		}
+		return false
+
+//return false
 	}
 
 	//========== json deltas

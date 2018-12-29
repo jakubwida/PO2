@@ -28618,6 +28618,11 @@ var GraphManager = function GraphManager(width, height) {
 			_this.svg.select("#node_" + e).classed("node_positive", true);
 		});
 
+		_this.svg.selectAll(".node").classed("node_negative", false);
+		_this.ui.current_legal_removable_node_links.forEach(function (e) {
+			_this.svg.select("#node_" + e).classed("node_negative", true);
+		});
+
 		var t = _this.svg.selectAll('.node_text').data(_this.nodes);
 
 		t.enter().append("svg:text").merge(t).attr('text-anchor', 'middle').attr('x', function (d) {
@@ -28671,21 +28676,31 @@ var GraphManager = function GraphManager(width, height) {
 		if (_this.ui.mouseover_node != null) {
 			_this.ui.selected_node = _this.ui.mouseover_node;
 			_this.ui.current_legal_linkable_nodes = _this._ui_get_legal_linkable_node_ids(_this.ui.selected_node.id);
+			_this.ui.current_legal_removable_node_links = _this._ui_get_legal_removable_linked_node_ids();
 			//console.log(this.ui.current_legal_linkable_nodes)
 			_this._restart();
 		}
 	};
 
 	this._ui_mouseup = function (event) {
-
+		/*
+  		if(this.ui.mouseover_node!=null && this.ui.selected_node !=null ) {
+  			console.log("hey!",(new Set(Object.keys(this.ui.selected_node.links))).has(String(this.ui.mouseover_node.id)),this.ui.mouseover_node.precursors)
+  			var is = this._ui_check_if_node_has_path_to_root_without_given_path(this.ui.mouseover_node.id,this.ui.selected_node.id)
+  			console.log(is)
+  		}
+  */
 		if (_this.ui.mouseover_node == null && _this.ui.selected_node != null) {
 			_this.add_node({ x: d3.event.pageX, y: d3.event.pageY }, _this._ui_get_next_id(), _this.ui.selected_node.id);
 		} else if (_this.ui.mouseover_node != null && _this.ui.selected_node != null && _this.ui.current_legal_linkable_nodes.has(String(_this.ui.mouseover_node.id))) {
 			_this.add_link(_this.ui.selected_node.id, _this.ui.mouseover_node.id);
+		} else if (_this.ui.mouseover_node != null && _this.ui.selected_node != null && _this.ui.current_legal_removable_node_links.has(String(_this.ui.mouseover_node.id))) {
+			_this.remove_link(_this.ui.selected_node.id, _this.ui.mouseover_node.id);
 		}
 
 		_this.ui.selected_node = null;
 		_this.ui.current_legal_linkable_nodes = [];
+		_this.ui.current_legal_removable_node_links = [];
 		_this._restart();
 	};
 
@@ -28727,6 +28742,61 @@ var GraphManager = function GraphManager(width, height) {
 		});
 		//console.log("self root filter",out)
 		return new Set(out);
+	};
+
+	this._ui_get_legal_removable_linked_node_ids = function (node_id) {
+		//dla każdej nody należy sprawdzić czy jest ścieżka do roota
+		//problemem są cykle
+		//możliwe rozwiązanie:
+		//idąc po prekursorach "usuwamy" ścieżki po których przeszliśmy.
+		//idziemy rekursywnie, najlepiej jak zrobimy kopię modelu grafu
+		//
+		//
+		return new Set(Object.keys(_this.ui.selected_node.links).filter(function (e) {
+			return _this._ui_check_if_node_has_path_to_root_without_given_path(e, _this.ui.selected_node.id);
+		}));
+	};
+
+	this._ui_check_if_node_has_path_to_root_without_given_path = function (node_id, linking_node_id) {
+		console.log("checking>>>", node_id, linking_node_id);
+
+		var copied_graph = {};
+
+		Object.keys(_this.indexed_nodes).forEach(function (e) {
+			var node = _this.indexed_nodes[e];
+			var prec_set = new Set(Object.keys(node.precursors));
+			copied_graph[e] = prec_set;
+		});
+
+		//remove given link
+		copied_graph[node_id].delete(String(linking_node_id));
+		//console.log("graph",copied_graph)
+
+		var checked_nodes = new Set([]);
+		var pending_nodes = new Set([String(node_id)]);
+
+		while (pending_nodes.size > 0) {
+			var pending_node = pending_nodes.values().next().value;
+			//console.log("node:",pending_node)
+			//console.log("pending:",pending_nodes)
+			//console.log("checked:",checked_nodes)
+			if (pending_node == String(_this.root.id)) {
+				return true;
+			}
+			pending_nodes.delete(pending_node);
+			checked_nodes.add(pending_node);
+
+			var precursors = copied_graph[pending_node];
+			//console.log("precursors",copied_graph[pending_node])
+			precursors.forEach(function (e) {
+				if (!checked_nodes.has(e)) {
+					pending_nodes.add(e);
+				}
+			});
+		}
+		return false;
+
+		//return false
 	};
 
 	this._get_graph_to_json = function () {
@@ -28849,7 +28919,8 @@ var GraphManager = function GraphManager(width, height) {
 		second_node: null,
 		mode: null, //ADD_NODE, REMOVE_NODE, ADD_LINK, REMOVE_LINK, SWAP_NODE
 		next_id: 1,
-		current_legal_linkable_nodes: []
+		current_legal_linkable_nodes: [],
+		current_legal_removable_node_links: []
 	};
 }
 
