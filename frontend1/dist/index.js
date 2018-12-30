@@ -28478,22 +28478,23 @@ var GraphManager = function GraphManager(width, height) {
 	};
 
 	this.add_node = function (coords, node_id, precursor_id) {
-		var precursor = _this.indexed_nodes[precursor_id];
-		var node = { x: coords.x, y: coords.y, id: node_id, links: {}, precursors: {} };
+		var precursor = _this.indexed_nodes[String(precursor_id)];
+		var node = { x: coords.x, y: coords.y, id: String(node_id), links: {}, precursors: {} };
 		_this.nodes.push(node);
-		_this.indexed_nodes[node_id] = node;
-		_this.add_link(precursor_id, node_id);
+		_this.indexed_nodes[String(node_id)] = node;
+		_this.add_link(String(precursor_id), String(node_id));
 		_this._restart();
 	};
 
 	this.add_pure_node = function (coords, node_id) {
-		var node = { x: coords.x, y: coords.y, id: node_id, links: {}, precursors: {} };
+		var node = { x: coords.x, y: coords.y, id: String(node_id), links: {}, precursors: {} };
 		_this.nodes.push(node);
-		_this.indexed_nodes[node_id] = node;
+		_this.indexed_nodes[String(node_id)] = node;
 		_this._restart();
 	};
 
 	this.remove_node = function (node_id) {
+
 		var node = _this.indexed_nodes[node_id];
 		Object.keys(node.links).forEach(function (e) {
 			_this.remove_link(node_id, e);
@@ -28503,8 +28504,9 @@ var GraphManager = function GraphManager(width, height) {
 		});
 		delete _this.indexed_nodes[node_id];
 		_this.nodes = _this.nodes.filter(function (el) {
-			return el !== node;
+			return el.id != node.id;
 		});
+
 		_this._restart();
 	};
 
@@ -28523,6 +28525,8 @@ var GraphManager = function GraphManager(width, height) {
 	};
 
 	this.remove_link = function (node1_id, node2_id) {
+		node1_id = String(node1_id);
+		node2_id = String(node2_id);
 		var node_1 = _this.indexed_nodes[node1_id];
 		var node_2 = _this.indexed_nodes[node2_id];
 		var link = node_1.links[node2_id];
@@ -28544,7 +28548,8 @@ var GraphManager = function GraphManager(width, height) {
 		// we'll just do it wont we
 
 		//swapping links in link list
-
+		node1_id = String(node1_id);
+		node2_id = String(node2_id);
 		var node_1 = _this.indexed_nodes[node1_id];
 		var node_2 = _this.indexed_nodes[node2_id];
 
@@ -28595,7 +28600,13 @@ var GraphManager = function GraphManager(width, height) {
 		var u = _this.svg.selectAll('.node').data(_this.nodes);
 
 		//now includes UI
-		u.enter().append('circle').attr('r', _this.parameters.node_radius).merge(u).attr('cx', function (d) {
+		u.enter().append('circle').merge(u).attr('r', function (d) {
+			if (Object.keys(_this.indexed_nodes[d.id].links).length == 0 && String(d.id) != String(_this.root.id)) {
+				return _this.parameters.node_radius * 0.85;
+			} else {
+				return _this.parameters.node_radius;
+			}
+		}).attr('cx', function (d) {
 			return d.x;
 		}).attr('cy', function (d) {
 			return d.y;
@@ -28609,6 +28620,8 @@ var GraphManager = function GraphManager(width, height) {
 			return _this._ui_mouseover(d.id);
 		}).on("mouseout", function () {
 			return _this._ui_mouseout();
+		}).on("contextmenu", function (d, i) {
+			d3.event.preventDefault();
 		});
 
 		u.exit().remove();
@@ -28682,7 +28695,7 @@ var GraphManager = function GraphManager(width, height) {
 		}
 	};
 
-	this._ui_mouseup = function (event) {
+	this._ui_mouseup = function (d, event) {
 		/*
   		if(this.ui.mouseover_node!=null && this.ui.selected_node !=null ) {
   			console.log("hey!",(new Set(Object.keys(this.ui.selected_node.links))).has(String(this.ui.mouseover_node.id)),this.ui.mouseover_node.precursors)
@@ -28696,6 +28709,9 @@ var GraphManager = function GraphManager(width, height) {
 			_this.add_link(_this.ui.selected_node.id, _this.ui.mouseover_node.id);
 		} else if (_this.ui.mouseover_node != null && _this.ui.selected_node != null && _this.ui.current_legal_removable_node_links.has(String(_this.ui.mouseover_node.id))) {
 			_this.remove_link(_this.ui.selected_node.id, _this.ui.mouseover_node.id);
+		} else if (_this.ui.mouseover_node != null && _this.ui.selected_node != null && _this.ui.mouseover_node.id == _this.ui.selected_node.id && Object.keys(_this.ui.mouseover_node.links).length == 0) {
+			_this.remove_node(_this.ui.mouseover_node.id);
+			console.log(event);
 		}
 
 		_this.ui.selected_node = null;
@@ -28897,7 +28913,7 @@ var GraphManager = function GraphManager(width, height) {
 		y: height
 	};
 	this.parameters = {
-		node_radius: 20,
+		node_radius: 25,
 		link_size: 100,
 		charge_force: -400,
 		center_force: 10

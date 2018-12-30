@@ -8,7 +8,7 @@ export default class GraphManager {
 			y:height
 			}
 		this.parameters = {
-			node_radius:20,
+			node_radius:25,
 			link_size:100,
 			charge_force:-400,
 			center_force:10
@@ -66,27 +66,29 @@ export default class GraphManager {
 	}
 
 	add_node = (coords,node_id,precursor_id) => {
-		var precursor = this.indexed_nodes[precursor_id]
-		var node = {x:coords.x,y:coords.y,id:node_id,links:{},precursors:{}}
+		var precursor = this.indexed_nodes[String(precursor_id)]
+		var node = {x:coords.x,y:coords.y,id:String(node_id),links:{},precursors:{}}
 		this.nodes.push(node)
-		this.indexed_nodes[node_id] = node
-		this.add_link(precursor_id,node_id)
+		this.indexed_nodes[String(node_id)] = node
+		this.add_link(String(precursor_id),String(node_id))
 		this._restart()
 	}
 
 	add_pure_node = (coords,node_id) => {
-		var node = {x:coords.x,y:coords.y,id:node_id,links:{},precursors:{}}
+		var node = {x:coords.x,y:coords.y,id:String(node_id),links:{},precursors:{}}
 		this.nodes.push(node)
-		this.indexed_nodes[node_id] = node
+		this.indexed_nodes[String(node_id)] = node
 		this._restart()
 	}
 
 	remove_node = (node_id) => {
+
 		var node = this.indexed_nodes[node_id]
 		Object.keys(node.links).forEach((e)=>{this.remove_link(node_id,e)})
 		Object.keys(node.precursors).forEach((e)=>{this.remove_link(e,node_id)})
 		delete this.indexed_nodes[node_id]
-		this.nodes = this.nodes.filter(el => el !== node);
+		this.nodes = this.nodes.filter(el => el.id != node.id);
+
 		this._restart()
 	}
 
@@ -105,6 +107,8 @@ export default class GraphManager {
 		}
 
 	remove_link = (node1_id,node2_id) => {
+		node1_id = String(node1_id)
+		node2_id = String(node2_id)
 		var node_1 = this.indexed_nodes[node1_id]
 		var node_2 = this.indexed_nodes[node2_id]
 		var link = node_1.links[node2_id]
@@ -124,7 +128,8 @@ export default class GraphManager {
 		// we'll just do it wont we
 
 		//swapping links in link list
-
+		node1_id = String(node1_id)
+		node2_id = String(node2_id)
 		var node_1 = this.indexed_nodes[node1_id]
 		var node_2 = this.indexed_nodes[node2_id]
 
@@ -197,8 +202,8 @@ export default class GraphManager {
 //now includes UI
 	  u.enter()
 	    .append('circle')
-	    .attr('r', this.parameters.node_radius)
 			.merge(u)
+	    .attr('r', (d)=>{if(Object.keys(this.indexed_nodes[d.id].links).length==0 && String(d.id) != String(this.root.id)){return this.parameters.node_radius*0.85 } else { return this.parameters.node_radius}})
 	    .attr('cx', (d)=> {return d.x})
 	    .attr('cy', (d)=> {return d.y})
 			.attr("class", "node")
@@ -207,6 +212,9 @@ export default class GraphManager {
 			.attr("id",(d)=> {return "node_"+d.id})
 			.on("mouseover",(d)=>this._ui_mouseover(d.id))
 			.on("mouseout",()=>this._ui_mouseout())
+			.on("contextmenu",(d, i)=>{
+				d3.event.preventDefault()
+			})
 
 	  u.exit().remove()
 
@@ -292,7 +300,7 @@ export default class GraphManager {
 		}
 	}
 
-	_ui_mouseup= (event) => {
+	_ui_mouseup= (d,event) => {
 /*
 		if(this.ui.mouseover_node!=null && this.ui.selected_node !=null ) {
 			console.log("hey!",(new Set(Object.keys(this.ui.selected_node.links))).has(String(this.ui.mouseover_node.id)),this.ui.mouseover_node.precursors)
@@ -306,6 +314,9 @@ export default class GraphManager {
 			this.add_link(this.ui.selected_node.id,this.ui.mouseover_node.id)
 		} else if (this.ui.mouseover_node!=null && this.ui.selected_node !=null && this.ui.current_legal_removable_node_links.has(String(this.ui.mouseover_node.id))) {
 			this.remove_link(this.ui.selected_node.id,this.ui.mouseover_node.id)
+		} else if (this.ui.mouseover_node!=null && this.ui.selected_node !=null && this.ui.mouseover_node.id == this.ui.selected_node.id && Object.keys(this.ui.mouseover_node.links).length==0) {
+			this.remove_node(this.ui.mouseover_node.id)
+			console.log(event)
 		}
 
 		this.ui.selected_node = null
