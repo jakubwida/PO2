@@ -1,0 +1,57 @@
+REST
+
+Ogólnie:
+1. W momencie którym user wprowadzi plik, ten jest wysyłany na serwer, odczytany i zwrócony jest userowi json z grafem
+2. Przy wykonaniu każdej zmiany na grafie, klient wysyła PUT ze zmianą, serwer odsyła graf. (zmiany są już na grafie klienta, ale to takie potwierdzenie)
+
+Stąd:
+
+format jsona z grafem:
+
+{
+	"node_id_1":["linked_node_id_1","linked_node_id_2"...],
+	"node_id_2":["linked_node_id_1","linked_node_id_2"...],
+	"node_id_3":[...],
+	...
+}
+
+URL-e:
+<każdy oczekuje na zwrocie jsona z grafem>
+
+POST /file
+	body:plik
+	=> wysyła plik
+
+PUT /addnode
+	body:{
+		node_id:"node_id",
+		precursor_id:"id node linkującej do wstawianej"
+	}
+	=> wstawianie nowego node, z danym istniejącym nodem którym ma być poprzednikiem nowego
+
+PUT /addlink
+	body: {
+		node1_id:"id node-poprzednika",
+		node2_id:"id node-następnika"
+	}
+	=>wstawia link między node_1 a node_2
+
+PUT /removenode
+	body: {
+		node_id:"id usuwanej node"
+	}
+	=>usuwa node
+
+PUT /removelink
+	body: {
+		node1_id:"id node-poprzednika",
+		node2_id:"id node-następnika"
+	}
+	=> usuwa link między node1 a node2
+
+PUT /swapnodes
+	body: {
+		node1_id:"id pierwszej node"
+		node2_id:"id drugiej node"
+	}
+	=>swapuje node1 z node2
