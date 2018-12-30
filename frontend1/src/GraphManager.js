@@ -1,8 +1,10 @@
 import * as d3 from "d3"
+import RestAPI from "./RestAPI"
 
 export default class GraphManager {
 
 	constructor(width,height){
+		console.log(RestAPI)
 		this.dimensions = {
 			x:width,
 			y:height
@@ -13,6 +15,9 @@ export default class GraphManager {
 			charge_force:-400,
 			center_force:10
 			}
+
+		var getUrl = window.location;
+		this.url = getUrl .protocol + "//" + getUrl.host
 
 		this.indexed_nodes = {}
 		this.root = {x:this.dimensions.x/2,y:this.dimensions.y/2,id:0,links:{},precursors:{}}
@@ -65,6 +70,11 @@ export default class GraphManager {
 		//TEMP end
 	}
 
+	postFile = (file) => {
+		RestAPI.postFile(this.url,file)
+			.then(e=>{this._apply_json(e)})
+	}
+
 	add_node = (coords,node_id,precursor_id) => {
 		var precursor = this.indexed_nodes[String(precursor_id)]
 		var node = {x:coords.x,y:coords.y,id:String(node_id),links:{},precursors:{}}
@@ -72,6 +82,8 @@ export default class GraphManager {
 		this.indexed_nodes[String(node_id)] = node
 		this.add_link(String(precursor_id),String(node_id))
 		this._restart()
+		//REST
+		RestAPI.putAddNode(this.url,node_id,precursor_id).then(e=>{this._apply_json(e)})
 	}
 
 	add_pure_node = (coords,node_id) => {
@@ -90,6 +102,9 @@ export default class GraphManager {
 		this.nodes = this.nodes.filter(el => el.id != node.id);
 
 		this._restart()
+
+		//REST
+		RestAPI.putRemoveNode(this.url,node_id).then(e=>{this._apply_json(e)})
 	}
 
 	add_link = (node1_id,node2_id) => {
@@ -104,6 +119,9 @@ export default class GraphManager {
 
 		this.links.push(link)
 		this._restart()
+
+		//REST
+		RestAPI.putAddLink(this.url,node1_id,node2_id).then(e=>{this._apply_json(e)})
 		}
 
 	remove_link = (node1_id,node2_id) => {
@@ -117,6 +135,9 @@ export default class GraphManager {
 		delete node_2.precursors[node1_id]
 		this.links = this.links.filter(el => el !== link);
 		this._restart()
+
+		//REST
+		RestAPI.putRemoveLink(this.url,node1_id,node2_id).then(e=>{this._apply_json(e)})
 		}
 
 	swap_nodes = (node1_id,node2_id) => {
@@ -163,12 +184,19 @@ export default class GraphManager {
 		node_1.precursors = node_2_prec
 		node_2.precursors = temp_p
 
+		//REST
+		RestAPI.putSwapNodes(this.url,node1_id,node2_id).then(e=>{this._apply_json(e)})
 		}
 
 
 	//privates ====================================================================
 
 	_init_screen = () => {
+		this.fileinput = d3.select("body")
+			.append('input')
+			.data([{}])
+    	.attr('type','file')
+			.on('input',(e,d,v)=>{console.log(v[0].files[0]); RestAPI.postFile(v[0].files[0])})
 		this.svg = d3.select("body")
 			.append("svg")
 			.attr("width", this.dimensions.x)

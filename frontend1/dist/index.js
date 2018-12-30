@@ -28445,6 +28445,12 @@ var _d = __webpack_require__(/*! d3 */ "./node_modules/d3/index.js");
 
 var d3 = _interopRequireWildcard(_d);
 
+var _RestAPI = __webpack_require__(/*! ./RestAPI */ "./src/RestAPI.js");
+
+var _RestAPI2 = _interopRequireDefault(_RestAPI);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -28480,6 +28486,12 @@ var GraphManager = function () {
 			//TEMP end
 		};
 
+		this.postFile = function (file) {
+			_RestAPI2.default.postFile(_this.url, file).then(function (e) {
+				_this._apply_json(e);
+			});
+		};
+
 		this.add_node = function (coords, node_id, precursor_id) {
 			var precursor = _this.indexed_nodes[String(precursor_id)];
 			var node = { x: coords.x, y: coords.y, id: String(node_id), links: {}, precursors: {} };
@@ -28487,6 +28499,10 @@ var GraphManager = function () {
 			_this.indexed_nodes[String(node_id)] = node;
 			_this.add_link(String(precursor_id), String(node_id));
 			_this._restart();
+			//REST
+			_RestAPI2.default.putAddNode(_this.url, node_id, precursor_id).then(function (e) {
+				_this._apply_json(e);
+			});
 		};
 
 		this.add_pure_node = function (coords, node_id) {
@@ -28511,6 +28527,11 @@ var GraphManager = function () {
 			});
 
 			_this._restart();
+
+			//REST
+			_RestAPI2.default.putRemoveNode(_this.url, node_id).then(function (e) {
+				_this._apply_json(e);
+			});
 		};
 
 		this.add_link = function (node1_id, node2_id) {
@@ -28525,6 +28546,11 @@ var GraphManager = function () {
 
 			_this.links.push(link);
 			_this._restart();
+
+			//REST
+			_RestAPI2.default.putAddLink(_this.url, node1_id, node2_id).then(function (e) {
+				_this._apply_json(e);
+			});
 		};
 
 		this.remove_link = function (node1_id, node2_id) {
@@ -28540,6 +28566,11 @@ var GraphManager = function () {
 				return el !== link;
 			});
 			_this._restart();
+
+			//REST
+			_RestAPI2.default.putRemoveLink(_this.url, node1_id, node2_id).then(function (e) {
+				_this._apply_json(e);
+			});
 		};
 
 		this.swap_nodes = function (node1_id, node2_id) {
@@ -28585,9 +28616,17 @@ var GraphManager = function () {
 			var temp_p = node_1_prec;
 			node_1.precursors = node_2_prec;
 			node_2.precursors = temp_p;
+
+			//REST
+			_RestAPI2.default.putSwapNodes(_this.url, node1_id, node2_id).then(function (e) {
+				_this._apply_json(e);
+			});
 		};
 
 		this._init_screen = function () {
+			_this.fileinput = d3.select("body").append('input').data([{}]).attr('type', 'file').on('input', function (e, d, v) {
+				console.log(v[0].files[0]);_RestAPI2.default.postFile(v[0].files[0]);
+			});
 			_this.svg = d3.select("body").append("svg").attr("width", _this.dimensions.x).attr("height", _this.dimensions.y).on("mousedown", _this._ui_mousedown).on("mouseup", _this._ui_mouseup);
 			//appending markers for lines
 			_this.svg.append('svg:defs').append('svg:marker').attr('id', 'end-arrow').attr('class', "link_marker").attr('viewBox', '0 -5 10 10').attr('refX', 6).attr('markerWidth', 3).attr('markerHeight', 3).attr('orient', 'auto').append('svg:path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#000');
@@ -28676,7 +28715,7 @@ var GraphManager = function () {
 				var sourceY = d.source.y + padding * normY;
 				var targetX = d.target.x - padding * normX;
 				var targetY = d.target.y - padding * normY;
-				return 'M' + sourceX + ',' + sourceY + 'L' + targetX + ',' + targetY;
+				return "M" + sourceX + "," + sourceY + "L" + targetX + "," + targetY;
 			}).attr("class", "link").attr("marker-end", "url(#end-arrow)");
 
 			u.exit().remove();
@@ -28915,6 +28954,7 @@ var GraphManager = function () {
 			});
 		};
 
+		console.log(_RestAPI2.default);
 		this.dimensions = {
 			x: width,
 			y: height
@@ -28925,6 +28965,9 @@ var GraphManager = function () {
 			charge_force: -400,
 			center_force: 10
 		};
+
+		var getUrl = window.location;
+		this.url = getUrl.protocol + "//" + getUrl.host;
 
 		this.indexed_nodes = {};
 		this.root = { x: this.dimensions.x / 2, y: this.dimensions.y / 2, id: 0, links: {}, precursors: {} };
@@ -28954,7 +28997,7 @@ var GraphManager = function () {
 	//-
 
 	_createClass(GraphManager, [{
-		key: '_ui_check_if_there_is_path_between_two_nodes',
+		key: "_ui_check_if_there_is_path_between_two_nodes",
 		value: function _ui_check_if_there_is_path_between_two_nodes(node_id_1, node_id_2) {
 			node_id_1 = String(node_id_1);
 			node_id_2 = String(node_id_2);
@@ -28989,6 +29032,98 @@ var GraphManager = function () {
 }();
 
 exports.default = GraphManager;
+
+/***/ }),
+
+/***/ "./src/RestAPI.js":
+/*!************************!*\
+  !*** ./src/RestAPI.js ***!
+  \************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var RestAPI = function () {
+	function RestAPI() {
+		_classCallCheck(this, RestAPI);
+	}
+
+	_createClass(RestAPI, null, [{
+		key: "put",
+		value: function put(url, data_obj) {
+			return fetch(url, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				redirect: "follow",
+				referrer: "no-referrer",
+				body: JSON.stringify(data_obj)
+			}).then(function (response) {
+				return response.json();
+			});
+		}
+	}, {
+		key: "post",
+		value: function post(url, data_obj) {
+			return fetch(url, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				redirect: "follow",
+				referrer: "no-referrer",
+				body: JSON.stringify(data_obj)
+			}).then(function (response) {
+				return response.json();
+			});
+		}
+	}, {
+		key: "postFile",
+		value: function postFile(base_url, file) {
+			return this.post(base_url + "/file", file);
+		}
+	}, {
+		key: "putAddNode",
+		value: function putAddNode(base_url, node_id, precursor_id) {
+			return this.put(base_url + "/addnode", { node_id: String(node_id), precursor_id: String(precursor_id) });
+		}
+	}, {
+		key: "putAddLink",
+		value: function putAddLink(base_url, node1_id, node2_id) {
+			return this.put(base_url + "/addlink", { node1_id: String(node1_id), node2_id: String(node2_id) });
+		}
+	}, {
+		key: "putRemoveNode",
+		value: function putRemoveNode(base_url, node_id) {
+			return this.put(base_url + "/removenode", { node_id: String(node_id) });
+		}
+	}, {
+		key: "putRemoveLink",
+		value: function putRemoveLink(base_url, node1_id, node2_id) {
+			return this.put(base_url + "/removelink", { node1_id: String(node1_id), node2_id: String(node2_id) });
+		}
+	}, {
+		key: "putSwapNodes",
+		value: function putSwapNodes(base_url, node1_id, node2_id) {
+			return this.put(base_url + "/swapnodes", { node1_id: String(node1_id), node2_id: String(node2_id) });
+		}
+	}]);
+
+	return RestAPI;
+}();
+
+exports.default = RestAPI;
 
 /***/ }),
 
@@ -29039,82 +29174,6 @@ console.log("Hello world");
 var gm = new _GraphManager2.default(800, 480);
 
 gm.init();
-
-//gm._restart()
-
-
-//console.log(d3)
-//console.log(foo)
-
-/*
-let body = d3.select("body")
-var w_width = window.innerWidth;
-var w_height = window.innerHeight;
-
-var height = 480
-var width = 800
-
-let svg = body.append("svg").attr("width", width).attr("height", height)
-
-var node_radius = 10;
-
-//testing force layout
-
-//var nodes = [{x:100,y:100},{x:100,y:200}]
-//var links = [{source:0,target:1}]
-
-var nodes = []
-
-function ticked() {
-  var u = d3.select('svg')
-    .selectAll('circle')
-    .data(nodes)
-
-  u.enter()
-    .append('circle')
-    .attr('r', node_radius)
-    .merge(u)
-    .attr('cx', (d)=> {return d.x})
-    .attr('cy', (d)=> {return d.y})
-
-  u.exit().remove()
-}
-
-var simulation = d3.forceSimulation(nodes)
-  .force('charge', d3.forceManyBody().strength(-100))
-	.force('x', d3.forceX(width / 2))
-	.force('y', d3.forceY(height / 2))
-  .on('tick', ticked);
-
-//  .force('center', d3.forceCenter(height / 2, height / 2))
-
-
-//onlclick
-
-svg.on("click", function() {
-
-	var coords = d3.mouse(this);
-
-	//svg.append('circle').attr("cx",coords[0]).attr("cy",coords[1]).attr("r",node_radius)
- nodes.push({x:coords[0],y:coords[1]})
-	restart()
-})
-
-
-
-function restart() {
-
-  // Apply the general update pattern to the nodes.
-  //node = node.data(nodes, function(d) { return d.id;});
-  //node.exit().remove();
-  //node = node.enter().append("circle").attr("r", node_radius).merge(node);
-
-  // Update and restart the simulation.
-  simulation.nodes(nodes);
-  //simulation.force("link").links(links);
-  simulation.alpha(1).restart();
-}
-*/
 
 /***/ })
 
