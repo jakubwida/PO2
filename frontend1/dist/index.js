@@ -28439,6 +28439,8 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 var _d = __webpack_require__(/*! d3 */ "./node_modules/d3/index.js");
 
 var d3 = _interopRequireWildcard(_d);
@@ -28447,508 +28449,544 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var GraphManager = function GraphManager(width, height) {
-	var _this = this;
+var GraphManager = function () {
+	function GraphManager(width, height) {
+		var _this = this;
 
-	_classCallCheck(this, GraphManager);
+		_classCallCheck(this, GraphManager);
 
-	this.init = function (graph_json) {
+		this.init = function (graph_json) {
 
-		_this._init_screen();
-		_this.simulation = d3.forceSimulation(_this.nodes).force('charge', d3.forceManyBody().strength(_this.parameters.charge_force)).force('x', d3.forceX(_this.dimensions.x / 2)).force('y', d3.forceY(_this.dimensions.y / 2)).force('links', d3.forceLink().links(_this.links).id(function (d) {
-			return d.id;
-		}).distance(_this.parameters.link_size)).on('tick', _this._on_tick);
+			_this._init_screen();
+			_this.simulation = d3.forceSimulation(_this.nodes).force('charge', d3.forceManyBody().strength(_this.parameters.charge_force)).force('x', d3.forceX(_this.dimensions.x / 2)).force('y', d3.forceY(_this.dimensions.y / 2)).force('links', d3.forceLink().links(_this.links).id(function (d) {
+				return d.id;
+			}).distance(_this.parameters.link_size)).on('tick', _this._on_tick);
 
-		//testing TEMP
-		/*
-  this.add_node({x:100,y:100},"A","root")
-  this.add_node({x:100,y:120},"B","root")
-  this.add_node({x:100,y:120},"C","root")
-  this.add_node({x:100,y:120},"D","B")
-  this.add_link("C","B")
-  	this.swap_nodes("A","B")
-  */
-		//this.remove_node("2")
-		//TEMP end
+			//testing TEMP
+			/*
+   this.add_node({x:100,y:100},"A","root")
+   this.add_node({x:100,y:120},"B","root")
+   this.add_node({x:100,y:120},"C","root")
+   this.add_node({x:100,y:120},"D","B")
+   this.add_link("C","B")
+   	this.swap_nodes("A","B")
+   */
+			//this.remove_node("2")
+			//TEMP end
 
-		//TEMP
-		//this.graph_json = {"a":["b","d"],"b":[],"d":["b"]}
-		_this._apply_json({ 0: [1, 2], 1: [2], 2: [] });
-		//TEMP end
-	};
+			//TEMP
+			//this.graph_json = {"a":["b","d"],"b":[],"d":["b"]}
+			_this._apply_json({ 0: [1, 2], 1: [2], 2: [] });
+			//TEMP end
+		};
 
-	this.add_node = function (coords, node_id, precursor_id) {
-		var precursor = _this.indexed_nodes[String(precursor_id)];
-		var node = { x: coords.x, y: coords.y, id: String(node_id), links: {}, precursors: {} };
-		_this.nodes.push(node);
-		_this.indexed_nodes[String(node_id)] = node;
-		_this.add_link(String(precursor_id), String(node_id));
-		_this._restart();
-	};
-
-	this.add_pure_node = function (coords, node_id) {
-		var node = { x: coords.x, y: coords.y, id: String(node_id), links: {}, precursors: {} };
-		_this.nodes.push(node);
-		_this.indexed_nodes[String(node_id)] = node;
-		_this._restart();
-	};
-
-	this.remove_node = function (node_id) {
-
-		var node = _this.indexed_nodes[node_id];
-		Object.keys(node.links).forEach(function (e) {
-			_this.remove_link(node_id, e);
-		});
-		Object.keys(node.precursors).forEach(function (e) {
-			_this.remove_link(e, node_id);
-		});
-		delete _this.indexed_nodes[node_id];
-		_this.nodes = _this.nodes.filter(function (el) {
-			return el.id != node.id;
-		});
-
-		_this._restart();
-	};
-
-	this.add_link = function (node1_id, node2_id) {
-		//console.log(node1_id,node2_id)
-		//console.log(this.indexed_nodes,this.nodes)
-		var node_1 = _this.indexed_nodes[node1_id];
-		var node_2 = _this.indexed_nodes[node2_id];
-		var link = { source: node_1, target: node_2 };
-
-		node_1.links[node2_id] = link;
-		node_2.precursors[node1_id] = link;
-
-		_this.links.push(link);
-		_this._restart();
-	};
-
-	this.remove_link = function (node1_id, node2_id) {
-		node1_id = String(node1_id);
-		node2_id = String(node2_id);
-		var node_1 = _this.indexed_nodes[node1_id];
-		var node_2 = _this.indexed_nodes[node2_id];
-		var link = node_1.links[node2_id];
-
-		delete node_1.links[node2_id];
-		delete node_2.precursors[node1_id];
-		_this.links = _this.links.filter(function (el) {
-			return el !== link;
-		});
-		_this._restart();
-	};
-
-	this.swap_nodes = function (node1_id, node2_id) {
-		//what needs to be done
-		//1. swap all precursor links between two nodes.
-		//2. swap all links to the node
-		// generally, it will be easy to access the links in link list
-		// difficult part will include swapping keys at linking nodes
-		// we'll just do it wont we
-
-		//swapping links in link list
-		node1_id = String(node1_id);
-		node2_id = String(node2_id);
-		var node_1 = _this.indexed_nodes[node1_id];
-		var node_2 = _this.indexed_nodes[node2_id];
-
-		var node_1_prec = node_1.precursors;
-		var node_2_prec = node_2.precursors;
-
-		var list_of_node1_prec_nodes = [];
-
-		Object.keys(node_1_prec).forEach(function (e) {
-			node_1_prec[e].target = node_2;
-			var precursor_node = node_1_prec[e].source;
-			list_of_node1_prec_nodes.push(precursor_node);
-
-			delete precursor_node.links[node1_id];
-			precursor_node.links["TEMPORARY_ID"] = node_1_prec[e];
-		});
-		Object.keys(node_2_prec).forEach(function (e) {
-			node_2_prec[e].target = node_1;
-			var precursor_node = node_2_prec[e].source;
-			delete precursor_node.links[node2_id];
-			precursor_node.links[node1_id] = node_2_prec[e];
-		});
-
-		list_of_node1_prec_nodes.forEach(function (e) {
-			var link = e.links["TEMPORARY_ID"];
-			delete e.links["TEMPORARY_ID"];
-			e.links[node_2.id] = link;
-		});
-
-		var temp_p = node_1_prec;
-		node_1.precursors = node_2_prec;
-		node_2.precursors = temp_p;
-	};
-
-	this._init_screen = function () {
-		_this.svg = d3.select("body").append("svg").attr("width", _this.dimensions.x).attr("height", _this.dimensions.y).on("mousedown", _this._ui_mousedown).on("mouseup", _this._ui_mouseup);
-		//appending markers for lines
-		_this.svg.append('svg:defs').append('svg:marker').attr('id', 'end-arrow').attr('class', "link_marker").attr('viewBox', '0 -5 10 10').attr('refX', 6).attr('markerWidth', 3).attr('markerHeight', 3).attr('orient', 'auto').append('svg:path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#000');
-	};
-
-	this._on_tick = function () {
-		_this._update_nodes();
-		_this._update_links();
-	};
-
-	this._update_nodes = function () {
-
-		var u = _this.svg.selectAll('.node').data(_this.nodes);
-
-		//now includes UI
-		u.enter().append('circle').merge(u).attr('r', function (d) {
-			if (Object.keys(_this.indexed_nodes[d.id].links).length == 0 && String(d.id) != String(_this.root.id)) {
-				return _this.parameters.node_radius * 0.85;
-			} else {
-				return _this.parameters.node_radius;
-			}
-		}).attr('cx', function (d) {
-			return d.x;
-		}).attr('cy', function (d) {
-			return d.y;
-		}).attr("class", "node").classed("node_mouseover", function (d) {
-			return _this.ui.mouseover_node && _this.ui.mouseover_node.id == d.id;
-		}).classed("node_highlighted", function (d) {
-			return _this.ui.selected_node && _this.ui.selected_node.id == d.id;
-		}).attr("id", function (d) {
-			return "node_" + d.id;
-		}).on("mouseover", function (d) {
-			return _this._ui_mouseover(d.id);
-		}).on("mouseout", function () {
-			return _this._ui_mouseout();
-		}).on("contextmenu", function (d, i) {
-			d3.event.preventDefault();
-		});
-
-		u.exit().remove();
-
-		_this.svg.selectAll(".node").classed("node_positive", false);
-		_this.ui.current_legal_linkable_nodes.forEach(function (e) {
-			_this.svg.select("#node_" + e).classed("node_positive", true);
-		});
-
-		_this.svg.selectAll(".node").classed("node_negative", false);
-		_this.ui.current_legal_removable_node_links.forEach(function (e) {
-			_this.svg.select("#node_" + e).classed("node_negative", true);
-		});
-
-		var t = _this.svg.selectAll('.node_text').data(_this.nodes);
-
-		t.enter().append("svg:text").merge(t).attr('text-anchor', 'middle').attr('x', function (d) {
-			return d.x;
-		}).attr('y', function (d) {
-			return d.y + 4;
-		}).attr('class', 'node_text').text(function (d) {
-			return d.id;
-		});
-		t.exit().remove();
-	};
-
-	this._update_links = function () {
-		var u = _this.svg.selectAll('.link').data(_this.links);
-
-		/*
-  	  u.enter()
-  	    .append('line')
-  			.merge(u)
-  	    .attr('x1', (d)=> {return d.source.x})
-  	    .attr('x2', (d)=> {return d.target.x})
-  	    .attr('y1', (d)=> {return d.source.y})
-  	    .attr('y2', (d)=> {return d.target.y})
-  			.attr("class", "link")
-  			.attr("marker-end","url(#end-arrow)")
-  */
-		u.enter().append('path').merge(u).attr('d', function (d) {
-			var deltaX = d.target.x - d.source.x;
-			var deltaY = d.target.y - d.source.y;
-			var dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-			var normX = deltaX / dist;
-			var normY = deltaY / dist;
-			var padding = _this.parameters.node_radius;
-			var sourceX = d.source.x + padding * normX;
-			var sourceY = d.source.y + padding * normY;
-			var targetX = d.target.x - padding * normX;
-			var targetY = d.target.y - padding * normY;
-			return 'M' + sourceX + ',' + sourceY + 'L' + targetX + ',' + targetY;
-		}).attr("class", "link").attr("marker-end", "url(#end-arrow)");
-
-		u.exit().remove();
-	};
-
-	this._restart = function () {
-		_this.simulation.nodes(_this.nodes);
-		_this.simulation.force("links").links(_this.links);
-		_this.simulation.alpha(1).restart();
-	};
-
-	this._ui_mousedown = function () {
-		if (_this.ui.mouseover_node != null) {
-			_this.ui.selected_node = _this.ui.mouseover_node;
-			_this.ui.current_legal_linkable_nodes = _this._ui_get_legal_linkable_node_ids(_this.ui.selected_node.id);
-			_this.ui.current_legal_removable_node_links = _this._ui_get_legal_removable_linked_node_ids();
-			//console.log(this.ui.current_legal_linkable_nodes)
+		this.add_node = function (coords, node_id, precursor_id) {
+			var precursor = _this.indexed_nodes[String(precursor_id)];
+			var node = { x: coords.x, y: coords.y, id: String(node_id), links: {}, precursors: {} };
+			_this.nodes.push(node);
+			_this.indexed_nodes[String(node_id)] = node;
+			_this.add_link(String(precursor_id), String(node_id));
 			_this._restart();
-		}
-	};
+		};
 
-	this._ui_mouseup = function (d, event) {
-		/*
-  		if(this.ui.mouseover_node!=null && this.ui.selected_node !=null ) {
-  			console.log("hey!",(new Set(Object.keys(this.ui.selected_node.links))).has(String(this.ui.mouseover_node.id)),this.ui.mouseover_node.precursors)
-  			var is = this._ui_check_if_node_has_path_to_root_without_given_path(this.ui.mouseover_node.id,this.ui.selected_node.id)
-  			console.log(is)
-  		}
-  */
-		if (_this.ui.mouseover_node == null && _this.ui.selected_node != null) {
-			_this.add_node({ x: d3.event.pageX, y: d3.event.pageY }, _this._ui_get_next_id(), _this.ui.selected_node.id);
-		} else if (_this.ui.mouseover_node != null && _this.ui.selected_node != null && _this.ui.current_legal_linkable_nodes.has(String(_this.ui.mouseover_node.id))) {
-			_this.add_link(_this.ui.selected_node.id, _this.ui.mouseover_node.id);
-		} else if (_this.ui.mouseover_node != null && _this.ui.selected_node != null && _this.ui.current_legal_removable_node_links.has(String(_this.ui.mouseover_node.id))) {
-			_this.remove_link(_this.ui.selected_node.id, _this.ui.mouseover_node.id);
-		} else if (_this.ui.mouseover_node != null && _this.ui.selected_node != null && _this.ui.mouseover_node.id == _this.ui.selected_node.id && Object.keys(_this.ui.mouseover_node.links).length == 0) {
-			_this.remove_node(_this.ui.mouseover_node.id);
-			console.log(event);
-		}
+		this.add_pure_node = function (coords, node_id) {
+			var node = { x: coords.x, y: coords.y, id: String(node_id), links: {}, precursors: {} };
+			_this.nodes.push(node);
+			_this.indexed_nodes[String(node_id)] = node;
+			_this._restart();
+		};
 
-		_this.ui.selected_node = null;
-		_this.ui.current_legal_linkable_nodes = [];
-		_this.ui.current_legal_removable_node_links = [];
-		_this._restart();
-	};
+		this.remove_node = function (node_id) {
 
-	this._ui_mouseover = function (node_id) {
-		_this.ui.mouseover_node = _this.indexed_nodes[node_id];
-		_this.svg.selectAll("#node_" + node_id).classed("node_mouseover", true);
-	};
+			var node = _this.indexed_nodes[node_id];
+			Object.keys(node.links).forEach(function (e) {
+				_this.remove_link(node_id, e);
+			});
+			Object.keys(node.precursors).forEach(function (e) {
+				_this.remove_link(e, node_id);
+			});
+			delete _this.indexed_nodes[node_id];
+			_this.nodes = _this.nodes.filter(function (el) {
+				return el.id != node.id;
+			});
 
-	this._ui_mouseout = function () {
-		_this.svg.selectAll("#node_" + _this.ui.mouseover_node.id).classed("node_mouseover", false);
-		_this.ui.mouseover_node = null;
-	};
+			_this._restart();
+		};
 
-	this._ui_get_next_id = function () {
-		_this.ui.next_id = parseInt(_this.ui.next_id) + 1;
-		return _this.ui.next_id - 1;
-	};
+		this.add_link = function (node1_id, node2_id) {
+			//console.log(node1_id,node2_id)
+			//console.log(this.indexed_nodes,this.nodes)
+			var node_1 = _this.indexed_nodes[node1_id];
+			var node_2 = _this.indexed_nodes[node2_id];
+			var link = { source: node_1, target: node_2 };
 
-	this._ui_get_legal_linkable_node_ids = function (node_id) {
-		var node = _this.indexed_nodes[node_id];
-		var all_node_ids = Object.keys(_this.indexed_nodes);
-		var precursors = new Set(Object.keys(node.precursors));
-		var links = new Set(Object.keys(node.links));
-		//console.log(all_node_ids,node_id,precursors,links)
-		var root = 0;
-		var self = node.id;
-		var out = [];
-		//console.log("initial:",all_node_ids)
-		out = all_node_ids.filter(function (e) {
-			return !precursors.has(e);
-		});
-		//console.log("prec filter",out)
-		out = out.filter(function (e) {
-			return !links.has(e);
-		});
-		//console.log("link filter",out)
-		out = out.filter(function (e) {
-			return e != root && e != self;
-		});
-		//console.log("self root filter",out)
-		return new Set(out);
-	};
+			node_1.links[node2_id] = link;
+			node_2.precursors[node1_id] = link;
 
-	this._ui_get_legal_removable_linked_node_ids = function (node_id) {
-		//dla każdej nody należy sprawdzić czy jest ścieżka do roota
-		//problemem są cykle
-		//możliwe rozwiązanie:
-		//idąc po prekursorach "usuwamy" ścieżki po których przeszliśmy.
-		//idziemy rekursywnie, najlepiej jak zrobimy kopię modelu grafu
-		//
-		//
-		return new Set(Object.keys(_this.ui.selected_node.links).filter(function (e) {
-			return _this._ui_check_if_node_has_path_to_root_without_given_path(e, _this.ui.selected_node.id);
-		}));
-	};
+			_this.links.push(link);
+			_this._restart();
+		};
 
-	this._ui_check_if_node_has_path_to_root_without_given_path = function (node_id, linking_node_id) {
-		console.log("checking>>>", node_id, linking_node_id);
+		this.remove_link = function (node1_id, node2_id) {
+			node1_id = String(node1_id);
+			node2_id = String(node2_id);
+			var node_1 = _this.indexed_nodes[node1_id];
+			var node_2 = _this.indexed_nodes[node2_id];
+			var link = node_1.links[node2_id];
 
-		var copied_graph = {};
+			delete node_1.links[node2_id];
+			delete node_2.precursors[node1_id];
+			_this.links = _this.links.filter(function (el) {
+				return el !== link;
+			});
+			_this._restart();
+		};
 
-		Object.keys(_this.indexed_nodes).forEach(function (e) {
-			var node = _this.indexed_nodes[e];
-			var prec_set = new Set(Object.keys(node.precursors));
-			copied_graph[e] = prec_set;
-		});
+		this.swap_nodes = function (node1_id, node2_id) {
+			//what needs to be done
+			//1. swap all precursor links between two nodes.
+			//2. swap all links to the node
+			// generally, it will be easy to access the links in link list
+			// difficult part will include swapping keys at linking nodes
+			// we'll just do it wont we
 
-		//remove given link
-		copied_graph[node_id].delete(String(linking_node_id));
-		//console.log("graph",copied_graph)
+			//swapping links in link list
+			node1_id = String(node1_id);
+			node2_id = String(node2_id);
+			var node_1 = _this.indexed_nodes[node1_id];
+			var node_2 = _this.indexed_nodes[node2_id];
 
-		var checked_nodes = new Set([]);
-		var pending_nodes = new Set([String(node_id)]);
+			var node_1_prec = node_1.precursors;
+			var node_2_prec = node_2.precursors;
 
-		while (pending_nodes.size > 0) {
-			var pending_node = pending_nodes.values().next().value;
-			//console.log("node:",pending_node)
-			//console.log("pending:",pending_nodes)
-			//console.log("checked:",checked_nodes)
-			if (pending_node == String(_this.root.id)) {
-				return true;
-			}
-			pending_nodes.delete(pending_node);
-			checked_nodes.add(pending_node);
+			var list_of_node1_prec_nodes = [];
 
-			var precursors = copied_graph[pending_node];
-			//console.log("precursors",copied_graph[pending_node])
-			precursors.forEach(function (e) {
-				if (!checked_nodes.has(e)) {
-					pending_nodes.add(e);
+			Object.keys(node_1_prec).forEach(function (e) {
+				node_1_prec[e].target = node_2;
+				var precursor_node = node_1_prec[e].source;
+				list_of_node1_prec_nodes.push(precursor_node);
+
+				delete precursor_node.links[node1_id];
+				precursor_node.links["TEMPORARY_ID"] = node_1_prec[e];
+			});
+			Object.keys(node_2_prec).forEach(function (e) {
+				node_2_prec[e].target = node_1;
+				var precursor_node = node_2_prec[e].source;
+				delete precursor_node.links[node2_id];
+				precursor_node.links[node1_id] = node_2_prec[e];
+			});
+
+			list_of_node1_prec_nodes.forEach(function (e) {
+				var link = e.links["TEMPORARY_ID"];
+				delete e.links["TEMPORARY_ID"];
+				e.links[node_2.id] = link;
+			});
+
+			var temp_p = node_1_prec;
+			node_1.precursors = node_2_prec;
+			node_2.precursors = temp_p;
+		};
+
+		this._init_screen = function () {
+			_this.svg = d3.select("body").append("svg").attr("width", _this.dimensions.x).attr("height", _this.dimensions.y).on("mousedown", _this._ui_mousedown).on("mouseup", _this._ui_mouseup);
+			//appending markers for lines
+			_this.svg.append('svg:defs').append('svg:marker').attr('id', 'end-arrow').attr('class', "link_marker").attr('viewBox', '0 -5 10 10').attr('refX', 6).attr('markerWidth', 3).attr('markerHeight', 3).attr('orient', 'auto').append('svg:path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#000');
+		};
+
+		this._on_tick = function () {
+			_this._update_nodes();
+			_this._update_links();
+		};
+
+		this._update_nodes = function () {
+
+			var u = _this.svg.selectAll('.node').data(_this.nodes);
+
+			//now includes UI
+			u.enter().append('circle').merge(u).attr('r', function (d) {
+				if (Object.keys(_this.indexed_nodes[d.id].links).length == 0 && String(d.id) != String(_this.root.id)) {
+					return _this.parameters.node_radius * 0.85;
+				} else {
+					return _this.parameters.node_radius;
 				}
-			});
-		}
-		return false;
-
-		//return false
-	};
-
-	this._get_graph_to_json = function () {
-
-		_this.graph_json = {};
-		Object.keys(_this.indexed_nodes).forEach(function (e) {
-			var node = _this.indexed_nodes[e];
-			_this.graph_json[e] = Object.keys(node.links);
-		});
-
-		//console.log(this.graph_json)
-	};
-
-	this._apply_json = function (graph_json) {
-		var add_links = [];
-		var remove_links = [];
-		var add_nodes = [];
-		var remove_nodes = [];
-
-		_this._get_graph_to_json();
-		//graph_json structure
-		// {node_id: [linked_id1, linked_id2 ...], node_id2:[...] ...}
-
-		var curr_keys = Object.keys(_this.graph_json);
-		var new_keys = Object.keys(graph_json);
-
-		add_nodes = new_keys.filter(function (e) {
-			return !(e in _this.graph_json);
-		});
-		remove_nodes = curr_keys.filter(function (e) {
-			return !(e in graph_json);
-		});
-
-		var remaining_nodes = curr_keys.filter(function (e) {
-			return e in graph_json;
-		});
-
-		add_nodes.forEach(function (source) {
-			graph_json[source].forEach(function (target) {
-				add_links.push({ source: source, target: target });
-			});
-		});
-
-		remove_nodes.forEach(function (source) {
-			_this.graph_json[source].forEach(function (target) {
-				remove_links.push({ source: source, target: target });
-			});
-		});
-
-		remaining_nodes.forEach(function (source) {
-			var add_targets = graph_json[source].filter(function (e) {
-				return !_this.graph_json[source].includes(e);
-			});
-			var remove_targets = _this.graph_json[source].filter(function (e) {
-				return !graph_json[source].includes(e);
+			}).attr('cx', function (d) {
+				return d.x;
+			}).attr('cy', function (d) {
+				return d.y;
+			}).attr("class", "node").classed("node_mouseover", function (d) {
+				return _this.ui.mouseover_node && _this.ui.mouseover_node.id == d.id;
+			}).classed("node_highlighted", function (d) {
+				return _this.ui.selected_node && _this.ui.selected_node.id == d.id;
+			}).attr("id", function (d) {
+				return "node_" + d.id;
+			}).on("mouseover", function (d) {
+				return _this._ui_mouseover(d.id);
+			}).on("mouseout", function () {
+				return _this._ui_mouseout();
+			}).on("contextmenu", function (d, i) {
+				d3.event.preventDefault();
 			});
 
-			add_targets.forEach(function (e) {
-				add_links.push({ source: source, target: e });
+			u.exit().remove();
+
+			_this.svg.selectAll(".node").classed("node_positive", false);
+			_this.ui.current_legal_linkable_nodes.forEach(function (e) {
+				_this.svg.select("#node_" + e).classed("node_positive", true);
 			});
-			remove_targets.forEach(function (e) {
-				remove_links.push({ source: source, target: e });
+
+			_this.svg.selectAll(".node").classed("node_negative", false);
+			_this.ui.current_legal_removable_node_links.forEach(function (e) {
+				_this.svg.select("#node_" + e).classed("node_negative", true);
 			});
-		});
 
-		/*
-  console.log("add_nodes",add_nodes)
-  console.log("remove_nodes",remove_nodes)
-  console.log("add_links",add_links)
-  console.log("remove_links",remove_links)
-  */
+			var t = _this.svg.selectAll('.node_text').data(_this.nodes);
 
-		// ================ implementing change =========
-		var tempo = 0.2;
+			t.enter().append("svg:text").merge(t).attr('text-anchor', 'middle').attr('x', function (d) {
+				return d.x;
+			}).attr('y', function (d) {
+				return d.y + 4;
+			}).attr('class', 'node_text').text(function (d) {
+				return d.id;
+			});
+			t.exit().remove();
+		};
 
-		remove_links.forEach(function (e) {
-			_this.remove_link(e.source, e.target);
-		});
+		this._update_links = function () {
+			var u = _this.svg.selectAll('.link').data(_this.links);
 
-		remove_nodes.forEach(function (e) {
-			_this.remove_node(e);
-		});
+			/*
+   	  u.enter()
+   	    .append('line')
+   			.merge(u)
+   	    .attr('x1', (d)=> {return d.source.x})
+   	    .attr('x2', (d)=> {return d.target.x})
+   	    .attr('y1', (d)=> {return d.source.y})
+   	    .attr('y2', (d)=> {return d.target.y})
+   			.attr("class", "link")
+   			.attr("marker-end","url(#end-arrow)")
+   */
+			u.enter().append('path').merge(u).attr('d', function (d) {
+				var deltaX = d.target.x - d.source.x;
+				var deltaY = d.target.y - d.source.y;
+				var dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+				var normX = deltaX / dist;
+				var normY = deltaY / dist;
+				var padding = _this.parameters.node_radius;
+				var sourceX = d.source.x + padding * normX;
+				var sourceY = d.source.y + padding * normY;
+				var targetX = d.target.x - padding * normX;
+				var targetY = d.target.y - padding * normY;
+				return 'M' + sourceX + ',' + sourceY + 'L' + targetX + ',' + targetY;
+			}).attr("class", "link").attr("marker-end", "url(#end-arrow)");
 
-		add_nodes.forEach(function (e) {
-			if (_this.ui.next_id < parseInt(e)) {
-				_this.ui.next_id = parseInt(e) + 1;
+			u.exit().remove();
+		};
+
+		this._restart = function () {
+			_this.simulation.nodes(_this.nodes);
+			_this.simulation.force("links").links(_this.links);
+			_this.simulation.alpha(1).restart();
+		};
+
+		this._ui_mousedown = function () {
+			if (_this.ui.mouseover_node != null) {
+				_this.ui.selected_node = _this.ui.mouseover_node;
+				_this.ui.current_legal_linkable_nodes = _this._ui_get_legal_linkable_node_ids(_this.ui.selected_node.id);
+				_this.ui.current_legal_removable_node_links = _this._ui_get_legal_removable_linked_node_ids();
+				//console.log(this.ui.current_legal_linkable_nodes)
+				_this._restart();
 			}
-			_this.add_pure_node({ x: _this.dimensions.x / 2, y: _this.dimensions.y / 2 }, e);
-		});
+		};
 
-		add_links.forEach(function (e) {
-			_this.add_link(e.source, e.target);
-		});
-	};
+		this._ui_mouseup = function (d, event) {
+			/*
+   		if(this.ui.mouseover_node!=null && this.ui.selected_node !=null ) {
+   			console.log("hey!",(new Set(Object.keys(this.ui.selected_node.links))).has(String(this.ui.mouseover_node.id)),this.ui.mouseover_node.precursors)
+   			var is = this._ui_check_if_node_has_path_to_root_without_given_path(this.ui.mouseover_node.id,this.ui.selected_node.id)
+   			console.log(is)
+   		}
+   */
+			if (_this.ui.mouseover_node != null && _this.ui.selected_node != null && d3.event.ctrlKey) {
+				var a = _this._ui_check_if_there_is_path_between_two_nodes(_this.ui.mouseover_node.id, _this.ui.selected_node.id);
+				var b = _this._ui_check_if_there_is_path_between_two_nodes(_this.ui.selected_node.id, _this.ui.mouseover_node.id);
+				console.log(a, b);
+				if (!(a || b)) {
+					_this.swap_nodes(_this.ui.mouseover_node.id, _this.ui.selected_node.id);
+				}
+			} else if (_this.ui.mouseover_node == null && _this.ui.selected_node != null) {
+				_this.add_node({ x: d3.event.pageX, y: d3.event.pageY }, _this._ui_get_next_id(), _this.ui.selected_node.id);
+			} else if (_this.ui.mouseover_node != null && _this.ui.selected_node != null && _this.ui.current_legal_linkable_nodes.has(String(_this.ui.mouseover_node.id))) {
+				_this.add_link(_this.ui.selected_node.id, _this.ui.mouseover_node.id);
+			} else if (_this.ui.mouseover_node != null && _this.ui.selected_node != null && _this.ui.current_legal_removable_node_links.has(String(_this.ui.mouseover_node.id))) {
+				_this.remove_link(_this.ui.selected_node.id, _this.ui.mouseover_node.id);
+			} else if (_this.ui.mouseover_node != null && _this.ui.selected_node != null && _this.ui.mouseover_node.id == _this.ui.selected_node.id && Object.keys(_this.ui.mouseover_node.links).length == 0) {
+				_this.remove_node(_this.ui.mouseover_node.id);
+			}
 
-	this.dimensions = {
-		x: width,
-		y: height
-	};
-	this.parameters = {
-		node_radius: 25,
-		link_size: 100,
-		charge_force: -400,
-		center_force: 10
-	};
+			_this.ui.selected_node = null;
+			_this.ui.current_legal_linkable_nodes = [];
+			_this.ui.current_legal_removable_node_links = [];
+			_this._restart();
+		};
 
-	this.indexed_nodes = {};
-	this.root = { x: this.dimensions.x / 2, y: this.dimensions.y / 2, id: 0, links: {}, precursors: {} };
-	this.nodes = []; //[{x:100,y:100,id:"0",links:[]},{x:150,y:100,id:"1"},{x:150,y:150,id:"2",links:[]},{x:150,y:120,id:"3",links:[]}]
-	this.links = []; //[{source:this.nodes[0],target:this.nodes[1]}]
+		this._ui_mouseover = function (node_id) {
+			_this.ui.mouseover_node = _this.indexed_nodes[node_id];
+			_this.svg.selectAll("#node_" + node_id).classed("node_mouseover", true);
+		};
 
-	this.svg = null;
-	this.simulation = null;
+		this._ui_mouseout = function () {
+			_this.svg.selectAll("#node_" + _this.ui.mouseover_node.id).classed("node_mouseover", false);
+			_this.ui.mouseover_node = null;
+		};
 
-	this.graph_json = {};
+		this._ui_get_next_id = function () {
+			_this.ui.next_id = parseInt(_this.ui.next_id) + 1;
+			return _this.ui.next_id - 1;
+		};
 
-	this.ui = {
-		mouseover_node: null,
-		selected_node: null,
-		second_node: null,
-		mode: null, //ADD_NODE, REMOVE_NODE, ADD_LINK, REMOVE_LINK, SWAP_NODE
-		next_id: 1,
-		current_legal_linkable_nodes: [],
-		current_legal_removable_node_links: []
-	};
-}
+		this._ui_get_legal_linkable_node_ids = function (node_id) {
+			var node = _this.indexed_nodes[node_id];
+			var all_node_ids = Object.keys(_this.indexed_nodes);
+			var precursors = new Set(Object.keys(node.precursors));
+			var links = new Set(Object.keys(node.links));
+			//console.log(all_node_ids,node_id,precursors,links)
+			var root = 0;
+			var self = node.id;
+			var out = [];
+			//console.log("initial:",all_node_ids)
+			out = all_node_ids.filter(function (e) {
+				return !precursors.has(e);
+			});
+			//console.log("prec filter",out)
+			out = out.filter(function (e) {
+				return !links.has(e);
+			});
+			//console.log("link filter",out)
+			out = out.filter(function (e) {
+				return e != root && e != self;
+			});
+			//console.log("self root filter",out)
+			return new Set(out);
+		};
 
-//privates ====================================================================
+		this._ui_get_legal_removable_linked_node_ids = function (node_id) {
+			//dla każdej nody należy sprawdzić czy jest ścieżka do roota
+			//problemem są cykle
+			//możliwe rozwiązanie:
+			//idąc po prekursorach "usuwamy" ścieżki po których przeszliśmy.
+			//idziemy rekursywnie, najlepiej jak zrobimy kopię modelu grafu
+			//
+			//
+			return new Set(Object.keys(_this.ui.selected_node.links).filter(function (e) {
+				return _this._ui_check_if_node_has_path_to_root_without_given_path(e, _this.ui.selected_node.id);
+			}));
+		};
 
-//========== ui functions
+		this._ui_check_if_node_has_path_to_root_without_given_path = function (node_id, linking_node_id) {
+			//console.log("checking>>>",node_id,linking_node_id)
 
-//-
+			var copied_graph = {};
 
-//========== json deltas
+			Object.keys(_this.indexed_nodes).forEach(function (e) {
+				var node = _this.indexed_nodes[e];
+				var prec_set = new Set(Object.keys(node.precursors));
+				copied_graph[e] = prec_set;
+			});
 
-;
+			//remove given link
+			copied_graph[node_id].delete(String(linking_node_id));
+			//console.log("graph",copied_graph)
+
+			var checked_nodes = new Set([]);
+			var pending_nodes = new Set([String(node_id)]);
+
+			while (pending_nodes.size > 0) {
+				var pending_node = pending_nodes.values().next().value;
+				//console.log("node:",pending_node)
+				//console.log("pending:",pending_nodes)
+				//console.log("checked:",checked_nodes)
+				if (pending_node == String(_this.root.id)) {
+					return true;
+				}
+				pending_nodes.delete(pending_node);
+				checked_nodes.add(pending_node);
+
+				var precursors = copied_graph[pending_node];
+				//console.log("precursors",copied_graph[pending_node])
+				precursors.forEach(function (e) {
+					if (!checked_nodes.has(e)) {
+						pending_nodes.add(e);
+					}
+				});
+			}
+			return false;
+		};
+
+		this._get_graph_to_json = function () {
+
+			_this.graph_json = {};
+			Object.keys(_this.indexed_nodes).forEach(function (e) {
+				var node = _this.indexed_nodes[e];
+				_this.graph_json[e] = Object.keys(node.links);
+			});
+
+			//console.log(this.graph_json)
+		};
+
+		this._apply_json = function (graph_json) {
+			var add_links = [];
+			var remove_links = [];
+			var add_nodes = [];
+			var remove_nodes = [];
+
+			_this._get_graph_to_json();
+			//graph_json structure
+			// {node_id: [linked_id1, linked_id2 ...], node_id2:[...] ...}
+
+			var curr_keys = Object.keys(_this.graph_json);
+			var new_keys = Object.keys(graph_json);
+
+			add_nodes = new_keys.filter(function (e) {
+				return !(e in _this.graph_json);
+			});
+			remove_nodes = curr_keys.filter(function (e) {
+				return !(e in graph_json);
+			});
+
+			var remaining_nodes = curr_keys.filter(function (e) {
+				return e in graph_json;
+			});
+
+			add_nodes.forEach(function (source) {
+				graph_json[source].forEach(function (target) {
+					add_links.push({ source: source, target: target });
+				});
+			});
+
+			remove_nodes.forEach(function (source) {
+				_this.graph_json[source].forEach(function (target) {
+					remove_links.push({ source: source, target: target });
+				});
+			});
+
+			remaining_nodes.forEach(function (source) {
+				var add_targets = graph_json[source].filter(function (e) {
+					return !_this.graph_json[source].includes(e);
+				});
+				var remove_targets = _this.graph_json[source].filter(function (e) {
+					return !graph_json[source].includes(e);
+				});
+
+				add_targets.forEach(function (e) {
+					add_links.push({ source: source, target: e });
+				});
+				remove_targets.forEach(function (e) {
+					remove_links.push({ source: source, target: e });
+				});
+			});
+
+			/*
+   console.log("add_nodes",add_nodes)
+   console.log("remove_nodes",remove_nodes)
+   console.log("add_links",add_links)
+   console.log("remove_links",remove_links)
+   */
+
+			// ================ implementing change =========
+			var tempo = 0.2;
+
+			remove_links.forEach(function (e) {
+				_this.remove_link(e.source, e.target);
+			});
+
+			remove_nodes.forEach(function (e) {
+				_this.remove_node(e);
+			});
+
+			add_nodes.forEach(function (e) {
+				if (_this.ui.next_id < parseInt(e)) {
+					_this.ui.next_id = parseInt(e) + 1;
+				}
+				_this.add_pure_node({ x: _this.dimensions.x / 2, y: _this.dimensions.y / 2 }, e);
+			});
+
+			add_links.forEach(function (e) {
+				_this.add_link(e.source, e.target);
+			});
+		};
+
+		this.dimensions = {
+			x: width,
+			y: height
+		};
+		this.parameters = {
+			node_radius: 25,
+			link_size: 100,
+			charge_force: -400,
+			center_force: 10
+		};
+
+		this.indexed_nodes = {};
+		this.root = { x: this.dimensions.x / 2, y: this.dimensions.y / 2, id: 0, links: {}, precursors: {} };
+		this.nodes = []; //[{x:100,y:100,id:"0",links:[]},{x:150,y:100,id:"1"},{x:150,y:150,id:"2",links:[]},{x:150,y:120,id:"3",links:[]}]
+		this.links = []; //[{source:this.nodes[0],target:this.nodes[1]}]
+
+		this.svg = null;
+		this.simulation = null;
+
+		this.graph_json = {};
+
+		this.ui = {
+			mouseover_node: null,
+			selected_node: null,
+			second_node: null,
+			mode: null, //ADD_NODE, REMOVE_NODE, ADD_LINK, REMOVE_LINK, SWAP_NODE
+			next_id: 1,
+			current_legal_linkable_nodes: [],
+			current_legal_removable_node_links: []
+		};
+	}
+
+	//privates ====================================================================
+
+	//========== ui functions
+
+	//-
+
+	_createClass(GraphManager, [{
+		key: '_ui_check_if_there_is_path_between_two_nodes',
+		value: function _ui_check_if_there_is_path_between_two_nodes(node_id_1, node_id_2) {
+			node_id_1 = String(node_id_1);
+			node_id_2 = String(node_id_2);
+
+			var checked_nodes = new Set([]);
+			var pending_nodes = new Set([node_id_1]);
+
+			while (pending_nodes.size > 0) {
+				var pending_node = pending_nodes.values().next().value;
+
+				if (pending_node == node_id_2) {
+					return true;
+				}
+				pending_nodes.delete(pending_node);
+				checked_nodes.add(pending_node);
+				var links = Object.keys(this.indexed_nodes[pending_node].links);
+				links.forEach(function (e) {
+					e = String(e);
+					if (!checked_nodes.has(e)) {
+						pending_nodes.add(e);
+					}
+				});
+			}
+			return false;
+		}
+
+		//========== json deltas
+
+	}]);
+
+	return GraphManager;
+}();
 
 exports.default = GraphManager;
 

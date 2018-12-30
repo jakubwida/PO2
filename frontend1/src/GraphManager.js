@@ -308,7 +308,15 @@ export default class GraphManager {
 			console.log(is)
 		}
 */
-		if(this.ui.mouseover_node==null && this.ui.selected_node !=null){
+		if (this.ui.mouseover_node!=null && this.ui.selected_node !=null && d3.event.ctrlKey) {
+			var a = this._ui_check_if_there_is_path_between_two_nodes(this.ui.mouseover_node.id,this.ui.selected_node.id)
+			var b = this._ui_check_if_there_is_path_between_two_nodes(this.ui.selected_node.id,this.ui.mouseover_node.id)
+			console.log(a,b)
+			if(!(a||b)){
+				this.swap_nodes(this.ui.mouseover_node.id,this.ui.selected_node.id)
+				}
+
+		} else if(this.ui.mouseover_node==null && this.ui.selected_node !=null){
 			this.add_node({x:d3.event.pageX,y:d3.event.pageY},this._ui_get_next_id(),this.ui.selected_node.id)
 		} else if (this.ui.mouseover_node!=null && this.ui.selected_node !=null && this.ui.current_legal_linkable_nodes.has(String(this.ui.mouseover_node.id))) {
 			this.add_link(this.ui.selected_node.id,this.ui.mouseover_node.id)
@@ -316,7 +324,7 @@ export default class GraphManager {
 			this.remove_link(this.ui.selected_node.id,this.ui.mouseover_node.id)
 		} else if (this.ui.mouseover_node!=null && this.ui.selected_node !=null && this.ui.mouseover_node.id == this.ui.selected_node.id && Object.keys(this.ui.mouseover_node.links).length==0) {
 			this.remove_node(this.ui.mouseover_node.id)
-			console.log(event)
+
 		}
 
 		this.ui.selected_node = null
@@ -374,7 +382,7 @@ export default class GraphManager {
 	}
 
 	_ui_check_if_node_has_path_to_root_without_given_path = (node_id,linking_node_id) =>{
-		console.log("checking>>>",node_id,linking_node_id)
+		//console.log("checking>>>",node_id,linking_node_id)
 
 		var copied_graph = {}
 
@@ -411,9 +419,34 @@ export default class GraphManager {
 			})
 		}
 		return false
-
-//return false
 	}
+
+	_ui_check_if_there_is_path_between_two_nodes(node_id_1,node_id_2) {
+		node_id_1 = String(node_id_1)
+		node_id_2 = String(node_id_2)
+
+		var checked_nodes = new Set([])
+		var pending_nodes = new Set([node_id_1])
+
+		while(pending_nodes.size > 0){
+			var pending_node = pending_nodes.values().next().value
+
+			if(pending_node==node_id_2) {
+				return true
+			}
+			pending_nodes.delete(pending_node)
+			checked_nodes.add(pending_node)
+			var links = Object.keys(this.indexed_nodes[pending_node].links)
+			links.forEach(e=>{
+				e= String(e)
+				if(!checked_nodes.has(e)){
+					pending_nodes.add(e)
+				}
+			})
+		}
+		return false
+		}
+
 
 	//========== json deltas
 
