@@ -8,8 +8,20 @@ export default class RestAPI {
 			redirect: "follow",
 			referrer: "no-referrer",
 			body: JSON.stringify(data_obj),
-		}).then(response => response.json());
+		}).then(response => response.json()).then(response => {Console.log("PUT",response); return response});
 	}
+
+	static get(url){
+		return fetch(url, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			redirect: "follow",
+			referrer: "no-referrer",
+		}).then(response => response.json()).then(response => {Console.log("GET",response); return response});
+	}
+
 
 	static post(url,data_obj){
 		return fetch(url, {
@@ -20,7 +32,7 @@ export default class RestAPI {
 			redirect: "follow",
 			referrer: "no-referrer",
 			body: JSON.stringify(data_obj),
-		}).then(response => response.json());
+		}).then(response => response.json()).then(response => {Console.log("POST",response); return response});
 	}
 
 	static postFile(base_url,file){

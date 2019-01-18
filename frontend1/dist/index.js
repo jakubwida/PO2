@@ -28967,12 +28967,15 @@ var GraphManager = function () {
 		};
 
 		var getUrl = window.location;
-		this.url = getUrl.protocol + "//" + getUrl.host;
-
+		//this.url = getUrl .protocol + "//" + getUrl.host
+		this.url = getUrl.protocol + "//" + "localhost:8080";
 		this.indexed_nodes = {};
 		this.root = { x: this.dimensions.x / 2, y: this.dimensions.y / 2, id: 0, links: {}, precursors: {} };
 		this.nodes = []; //[{x:100,y:100,id:"0",links:[]},{x:150,y:100,id:"1"},{x:150,y:150,id:"2",links:[]},{x:150,y:120,id:"3",links:[]}]
 		this.links = []; //[{source:this.nodes[0],target:this.nodes[1]}]
+
+		//#TEMP
+		//RestAPI.get(this.url+"/","")
 
 		this.svg = null;
 		this.simulation = null;
@@ -29071,6 +29074,24 @@ var RestAPI = function () {
 				body: JSON.stringify(data_obj)
 			}).then(function (response) {
 				return response.json();
+			}).then(function (response) {
+				Console.log("PUT", response);return response;
+			});
+		}
+	}, {
+		key: "get",
+		value: function get(url) {
+			return fetch(url, {
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				redirect: "follow",
+				referrer: "no-referrer"
+			}).then(function (response) {
+				return response.json();
+			}).then(function (response) {
+				Console.log("GET", response);return response;
 			});
 		}
 	}, {
@@ -29086,6 +29107,8 @@ var RestAPI = function () {
 				body: JSON.stringify(data_obj)
 			}).then(function (response) {
 				return response.json();
+			}).then(function (response) {
+				Console.log("POST", response);return response;
 			});
 		}
 	}, {
