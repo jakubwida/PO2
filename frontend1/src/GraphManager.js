@@ -69,7 +69,7 @@ export default class GraphManager {
 
 		//TEMP
 		//this.graph_json = {"a":["b","d"],"b":[],"d":["b"]}
-		this._apply_json({0:[1,2],1:[2],2:[]})
+		// this._apply_json({0:[1,2],1:[2],2:[]})
 		//TEMP end
 	}
 

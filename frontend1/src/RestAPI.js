@@ -8,7 +8,7 @@ export default class RestAPI {
 			redirect: "follow",
 			referrer: "no-referrer",
 			body: JSON.stringify(data_obj),
-		}).then(response => response.json()).then(response => {Console.log("PUT",response); return response});
+		}).then(response => response.json().nodes).then(response => {Console.log("PUT",response); return response});
 	}
 
 	static get(url){
@@ -29,7 +29,7 @@ export default class RestAPI {
         return fetch(url, {
             method: "POST",
             body: formData,
-        }).then(response => response.json()).then(response => {Console.log("POST",response); return response});
+        }).then(response => response.json().nodes).then(response => {Console.log("POST",response); return response});
     }
 
     static postFile(base_url,file){
