@@ -199,7 +199,7 @@ export default class GraphManager {
 			.append('input')
 			.data([{}])
     	.attr('type','file')
-			.on('input',(e,d,v)=>{console.log(v[0].files[0]); RestAPI.postFile(v[0].files[0])})
+			.on('input',(e,d,v)=>{console.log(v[0].files[0]); RestAPI.postFile(this.url, v[0].files[0])})
 		this.svg = d3.select("body")
 			.append("svg")
 			.attr("width", this.dimensions.x)

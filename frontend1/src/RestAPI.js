@@ -22,22 +22,19 @@ export default class RestAPI {
 		}).then(response => response.json()).then(response => {Console.log("GET",response); return response});
 	}
 
+    static post(url,data_obj){
+        var formData  = new FormData();
+        formData.append("file", data_obj);
 
-	static post(url,data_obj){
-		return fetch(url, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			redirect: "follow",
-			referrer: "no-referrer",
-			body: JSON.stringify(data_obj),
-		}).then(response => response.json()).then(response => {Console.log("POST",response); return response});
-	}
+        return fetch(url, {
+            method: "POST",
+            body: formData,
+        }).then(response => response.json()).then(response => {Console.log("POST",response); return response});
+    }
 
-	static postFile(base_url,file){
-		return this.post(base_url+"/file",file)
-	}
+    static postFile(base_url,file){
+        return this.post(base_url+"/file",file)
+    }
 
 	static putAddNode(base_url,node_id,precursor_id){
 		return this.put(base_url+"/addnode",{node_id:String(node_id),precursor_id:String(precursor_id)})
