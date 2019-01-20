@@ -8,19 +8,9 @@ export default class RestAPI {
 			redirect: "follow",
 			referrer: "no-referrer",
 			body: JSON.stringify(data_obj),
-		}).then(response => response.json().nodes).then(response => {Console.log("PUT",response); return response});
+		}).then(response => response.json()).then(response => {console.log("PUT",response.nodes); return response.nodes});
 	}
 
-	static get(url){
-		return fetch(url, {
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			redirect: "follow",
-			referrer: "no-referrer",
-		}).then(response => response.json()).then(response => {Console.log("GET",response); return response});
-	}
 
     static post(url,data_obj){
         var formData  = new FormData();
@@ -29,11 +19,12 @@ export default class RestAPI {
         return fetch(url, {
             method: "POST",
             body: formData,
-        }).then(response => response.json().nodes).then(response => {Console.log("POST",response); return response});
+        }).then(response => response.json()).then(response => {var n = response.nodes; console.log("POST",n); return n});
+					//}).then(response => response.json().nodes);
     }
 
     static postFile(base_url,file){
-        return this.post(base_url+"/file",file)
+        return this.post(base_url+"/file",file).then(n=>{console.log("POSTfile",n); return n})
     }
 
 	static putAddNode(base_url,node_id,precursor_id){

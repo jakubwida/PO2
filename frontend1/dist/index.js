@@ -28482,17 +28482,19 @@ var GraphManager = function () {
 
 			//TEMP
 			//this.graph_json = {"a":["b","d"],"b":[],"d":["b"]}
-			_this._apply_json({ 0: [1, 2], 1: [2], 2: [] });
+			// this._apply_json({0:[1,2],1:[2],2:[]})
 			//TEMP end
 		};
 
 		this.postFile = function (file) {
 			_RestAPI2.default.postFile(_this.url, file).then(function (e) {
-				_this._apply_json(e);
+				console.log("!!!");_this._apply_json(e);
 			});
 		};
 
 		this.add_node = function (coords, node_id, precursor_id) {
+			var silent = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+
 			var precursor = _this.indexed_nodes[String(precursor_id)];
 			var node = { x: coords.x, y: coords.y, id: String(node_id), links: {}, precursors: {} };
 			_this.nodes.push(node);
@@ -28500,9 +28502,11 @@ var GraphManager = function () {
 			_this.add_link(String(precursor_id), String(node_id));
 			_this._restart();
 			//REST
-			_RestAPI2.default.putAddNode(_this.url, node_id, precursor_id).then(function (e) {
-				_this._apply_json(e);
-			});
+			if (!silent) {
+				_RestAPI2.default.putAddNode(_this.url, node_id, precursor_id).then(function (e) {
+					_this._apply_json(e);
+				});
+			}
 		};
 
 		this.add_pure_node = function (coords, node_id) {
@@ -28513,6 +28517,8 @@ var GraphManager = function () {
 		};
 
 		this.remove_node = function (node_id) {
+			var silent = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
 
 			var node = _this.indexed_nodes[node_id];
 			Object.keys(node.links).forEach(function (e) {
@@ -28529,12 +28535,16 @@ var GraphManager = function () {
 			_this._restart();
 
 			//REST
-			_RestAPI2.default.putRemoveNode(_this.url, node_id).then(function (e) {
-				_this._apply_json(e);
-			});
+			if (!silent) {
+				_RestAPI2.default.putRemoveNode(_this.url, node_id).then(function (e) {
+					_this._apply_json(e);
+				});
+			}
 		};
 
 		this.add_link = function (node1_id, node2_id) {
+			var silent = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
 			//console.log(node1_id,node2_id)
 			//console.log(this.indexed_nodes,this.nodes)
 			var node_1 = _this.indexed_nodes[node1_id];
@@ -28548,12 +28558,16 @@ var GraphManager = function () {
 			_this._restart();
 
 			//REST
-			_RestAPI2.default.putAddLink(_this.url, node1_id, node2_id).then(function (e) {
-				_this._apply_json(e);
-			});
+			if (!silent) {
+				_RestAPI2.default.putAddLink(_this.url, node1_id, node2_id).then(function (e) {
+					_this._apply_json(e);
+				});
+			}
 		};
 
 		this.remove_link = function (node1_id, node2_id) {
+			var silent = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
 			node1_id = String(node1_id);
 			node2_id = String(node2_id);
 			var node_1 = _this.indexed_nodes[node1_id];
@@ -28568,9 +28582,11 @@ var GraphManager = function () {
 			_this._restart();
 
 			//REST
-			_RestAPI2.default.putRemoveLink(_this.url, node1_id, node2_id).then(function (e) {
-				_this._apply_json(e);
-			});
+			if (!silent) {
+				_RestAPI2.default.putRemoveLink(_this.url, node1_id, node2_id).then(function (e) {
+					_this._apply_json(e);
+				});
+			}
 		};
 
 		this.swap_nodes = function (node1_id, node2_id) {
@@ -28625,7 +28641,7 @@ var GraphManager = function () {
 
 		this._init_screen = function () {
 			_this.fileinput = d3.select("body").append('input').data([{}]).attr('type', 'file').on('input', function (e, d, v) {
-				console.log(v[0].files[0]);_RestAPI2.default.postFile(v[0].files[0]);
+				console.log(v[0].files[0]);_this.postFile(v[0].files[0]);
 			});
 			_this.svg = d3.select("body").append("svg").attr("width", _this.dimensions.x).attr("height", _this.dimensions.y).on("mousedown", _this._ui_mousedown).on("mouseup", _this._ui_mouseup);
 			//appending markers for lines
@@ -28873,6 +28889,7 @@ var GraphManager = function () {
 		};
 
 		this._apply_json = function (graph_json) {
+			console.log(">>>applying", graph_json);
 			var add_links = [];
 			var remove_links = [];
 			var add_nodes = [];
@@ -28935,11 +28952,11 @@ var GraphManager = function () {
 			var tempo = 0.2;
 
 			remove_links.forEach(function (e) {
-				_this.remove_link(e.source, e.target);
+				_this.remove_link(e.source, e.target, true);
 			});
 
 			remove_nodes.forEach(function (e) {
-				_this.remove_node(e);
+				_this.remove_node(e, true);
 			});
 
 			add_nodes.forEach(function (e) {
@@ -28950,7 +28967,7 @@ var GraphManager = function () {
 			});
 
 			add_links.forEach(function (e) {
-				_this.add_link(e.source, e.target);
+				_this.add_link(e.source, e.target, true);
 			});
 		};
 
@@ -29075,46 +29092,31 @@ var RestAPI = function () {
 			}).then(function (response) {
 				return response.json();
 			}).then(function (response) {
-				Console.log("PUT", response);return response;
-			});
-		}
-	}, {
-		key: "get",
-		value: function get(url) {
-			return fetch(url, {
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				redirect: "follow",
-				referrer: "no-referrer"
-			}).then(function (response) {
-				return response.json();
-			}).then(function (response) {
-				Console.log("GET", response);return response;
+				console.log("PUT", response.nodes);return response.nodes;
 			});
 		}
 	}, {
 		key: "post",
 		value: function post(url, data_obj) {
+			var formData = new FormData();
+			formData.append("file", data_obj);
+
 			return fetch(url, {
 				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				redirect: "follow",
-				referrer: "no-referrer",
-				body: JSON.stringify(data_obj)
+				body: formData
 			}).then(function (response) {
 				return response.json();
 			}).then(function (response) {
-				Console.log("POST", response);return response;
+				var n = response.nodes;console.log("POST", n);return n;
 			});
+			//}).then(response => response.json().nodes);
 		}
 	}, {
 		key: "postFile",
 		value: function postFile(base_url, file) {
-			return this.post(base_url + "/file", file);
+			return this.post(base_url + "/file", file).then(function (n) {
+				console.log("POSTfile", n);return n;
+			});
 		}
 	}, {
 		key: "putAddNode",

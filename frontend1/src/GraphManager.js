@@ -75,10 +75,10 @@ export default class GraphManager {
 
 	postFile = (file) => {
 		RestAPI.postFile(this.url,file)
-			.then(e=>{this._apply_json(e)})
+			.then(e=>{console.log("!!!");this._apply_json(e)})
 	}
 
-	add_node = (coords,node_id,precursor_id) => {
+	add_node = (coords,node_id,precursor_id,silent=false) => {
 		var precursor = this.indexed_nodes[String(precursor_id)]
 		var node = {x:coords.x,y:coords.y,id:String(node_id),links:{},precursors:{}}
 		this.nodes.push(node)
@@ -86,7 +86,10 @@ export default class GraphManager {
 		this.add_link(String(precursor_id),String(node_id))
 		this._restart()
 		//REST
-		RestAPI.putAddNode(this.url,node_id,precursor_id).then(e=>{this._apply_json(e)})
+		if (!silent) {
+			RestAPI.putAddNode(this.url,node_id,precursor_id).then(e=>{this._apply_json(e)})
+		}
+
 	}
 
 	add_pure_node = (coords,node_id) => {
@@ -96,7 +99,7 @@ export default class GraphManager {
 		this._restart()
 	}
 
-	remove_node = (node_id) => {
+	remove_node = (node_id,silent=false) => {
 
 		var node = this.indexed_nodes[node_id]
 		Object.keys(node.links).forEach((e)=>{this.remove_link(node_id,e)})
@@ -107,10 +110,12 @@ export default class GraphManager {
 		this._restart()
 
 		//REST
+		if (!silent) {
 		RestAPI.putRemoveNode(this.url,node_id).then(e=>{this._apply_json(e)})
+		}
 	}
 
-	add_link = (node1_id,node2_id) => {
+	add_link = (node1_id,node2_id,silent=false) => {
 		//console.log(node1_id,node2_id)
 		//console.log(this.indexed_nodes,this.nodes)
 		var node_1 = this.indexed_nodes[node1_id]
@@ -124,10 +129,12 @@ export default class GraphManager {
 		this._restart()
 
 		//REST
-		RestAPI.putAddLink(this.url,node1_id,node2_id).then(e=>{this._apply_json(e)})
+		if (!silent) {
+			RestAPI.putAddLink(this.url,node1_id,node2_id).then(e=>{this._apply_json(e)})
 		}
+	}
 
-	remove_link = (node1_id,node2_id) => {
+	remove_link = (node1_id,node2_id,silent=false) => {
 		node1_id = String(node1_id)
 		node2_id = String(node2_id)
 		var node_1 = this.indexed_nodes[node1_id]
@@ -140,8 +147,10 @@ export default class GraphManager {
 		this._restart()
 
 		//REST
-		RestAPI.putRemoveLink(this.url,node1_id,node2_id).then(e=>{this._apply_json(e)})
+		if (!silent) {
+			RestAPI.putRemoveLink(this.url,node1_id,node2_id).then(e=>{this._apply_json(e)})
 		}
+	}
 
 	swap_nodes = (node1_id,node2_id) => {
 		//what needs to be done
@@ -199,7 +208,7 @@ export default class GraphManager {
 			.append('input')
 			.data([{}])
     	.attr('type','file')
-			.on('input',(e,d,v)=>{console.log(v[0].files[0]); RestAPI.postFile(this.url, v[0].files[0])})
+			.on('input',(e,d,v)=>{console.log(v[0].files[0]); this.postFile(v[0].files[0])})
 		this.svg = d3.select("body")
 			.append("svg")
 			.attr("width", this.dimensions.x)
@@ -494,6 +503,7 @@ export default class GraphManager {
 
 
 	_apply_json = (graph_json) => {
+		console.log(">>>applying",graph_json)
 		var add_links = []
 		var remove_links = []
 		var add_nodes = []
@@ -546,11 +556,11 @@ export default class GraphManager {
 		var tempo = 0.2
 
 		remove_links.forEach(e=>{
-			this.remove_link(e.source,e.target)
+			this.remove_link(e.source,e.target,true)
 		})
 
 		remove_nodes.forEach(e=>{
-			this.remove_node(e)
+			this.remove_node(e,true)
 		})
 
 		add_nodes.forEach(e=>{
@@ -561,7 +571,7 @@ export default class GraphManager {
 		})
 
 		add_links.forEach(e=>{
-			this.add_link(e.source,e.target)
+			this.add_link(e.source,e.target,true)
 		})
 
 	}
