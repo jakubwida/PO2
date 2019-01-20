@@ -28802,15 +28802,17 @@ var GraphManager = function () {
 		this._ui_get_legal_linkable_node_ids = function (node_id) {
 			var node = _this.indexed_nodes[node_id];
 			var all_node_ids = Object.keys(_this.indexed_nodes);
-			//var precursors = new Set(Object.keys(node.precursors))
+			var precursors = new Set(Object.keys(node.precursors));
 			var links = new Set(Object.keys(node.links));
 			//console.log(all_node_ids,node_id,precursors,links)
 			var root = 0;
 			var self = node.id;
 			var out = [];
 			//console.log("initial:",all_node_ids)
-			//out = all_node_ids.filter(e => !precursors.has(e))
-			out = all_node_ids;
+			out = all_node_ids.filter(function (e) {
+				return !precursors.has(e);
+			});
+			//out = all_node_ids
 			//console.log("prec filter",out)
 			out = out.filter(function (e) {
 				return !links.has(e);
