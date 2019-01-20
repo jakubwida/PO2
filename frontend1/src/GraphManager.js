@@ -394,14 +394,15 @@ export default class GraphManager {
 	_ui_get_legal_linkable_node_ids = (node_id) => {
 		var node = this.indexed_nodes[node_id]
 		var all_node_ids = Object.keys(this.indexed_nodes)
-		var precursors = new Set(Object.keys(node.precursors))
+		//var precursors = new Set(Object.keys(node.precursors))
 		var links = new Set (Object.keys(node.links))
 		//console.log(all_node_ids,node_id,precursors,links)
 		var root = 0
 		var self = node.id
 		var out = []
 		//console.log("initial:",all_node_ids)
-		out = all_node_ids.filter(e => !precursors.has(e))
+		//out = all_node_ids.filter(e => !precursors.has(e))
+		out = all_node_ids
 		//console.log("prec filter",out)
 		out = out.filter(e => !links.has(e))
 		//console.log("link filter",out)
@@ -503,6 +504,9 @@ export default class GraphManager {
 
 
 	_apply_json = (graph_json) => {
+		Object.keys(graph_json).forEach(k=>{
+			graph_json[k] = graph_json[k].map(String)
+		})
 		console.log(">>>applying",graph_json)
 		var add_links = []
 		var remove_links = []
@@ -545,12 +549,12 @@ export default class GraphManager {
 			})
 		})
 
-		/*
+
 		console.log("add_nodes",add_nodes)
 		console.log("remove_nodes",remove_nodes)
 		console.log("add_links",add_links)
 		console.log("remove_links",remove_links)
-		*/
+
 
 		// ================ implementing change =========
 		var tempo = 0.2
